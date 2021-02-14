@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 3.9.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"lingmoumou.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":true,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="在Servlet 3.0之前，Servlet采用Thread-Per-Request的方式处理请求，即每一次Http请求都由某一个线程从头到尾负责处理，也就是同步处理请求。如果一个请求需要进行IO操作，比如访问数据库、调用第三方服务接口等，那么其所对应的线程将同步地等待IO操作完成，而IO操作是非常慢的，所以此时的线程并不能及时地释放回线程池以供后续使用，在并发量越来越大的情况下，这将带来严重的">
+<meta name="keywords" content="java,spring,springboot,spring security,async,runnable,deferredresult,imooc,Spring Security开发安全的REST服务">
+<meta property="og:type" content="article">
+<meta property="og:title" content="SpringBoot 异步处理">
+<meta property="og:url" content="https://lingmoumou.github.io/p/2020/01/30/1326f080/index.html">
+<meta property="og:site_name" content="Lingmoumou&#39;s Blog">
+<meta property="og:description" content="在Servlet 3.0之前，Servlet采用Thread-Per-Request的方式处理请求，即每一次Http请求都由某一个线程从头到尾负责处理，也就是同步处理请求。如果一个请求需要进行IO操作，比如访问数据库、调用第三方服务接口等，那么其所对应的线程将同步地等待IO操作完成，而IO操作是非常慢的，所以此时的线程并不能及时地释放回线程池以供后续使用，在并发量越来越大的情况下，这将带来严重的">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:updated_time" content="2021-01-31T13:53:26.000Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="SpringBoot 异步处理">
+<meta name="twitter:description" content="在Servlet 3.0之前，Servlet采用Thread-Per-Request的方式处理请求，即每一次Http请求都由某一个线程从头到尾负责处理，也就是同步处理请求。如果一个请求需要进行IO操作，比如访问数据库、调用第三方服务接口等，那么其所对应的线程将同步地等待IO操作完成，而IO操作是非常慢的，所以此时的线程并不能及时地释放回线程池以供后续使用，在并发量越来越大的情况下，这将带来严重的">
+
+<link rel="canonical" href="https://lingmoumou.github.io/p/2020/01/30/1326f080/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>SpringBoot 异步处理 | Lingmoumou's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Lingmoumou's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">きっといつかって愿うまま</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://lingmoumou.github.io/p/2020/01/30/1326f080/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Ling Moumou">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Lingmoumou's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          SpringBoot 异步处理
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-01-30 23:32:06" itemprop="dateCreated datePublished" datetime="2020-01-30T23:32:06+08:00">2020-01-30</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-01-31 21:53:26" itemprop="dateModified" datetime="2021-01-31T21:53:26+08:00">2021-01-31</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Java/SpringBoot/" itemprop="url" rel="index"><span itemprop="name">SpringBoot</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p><img data-src="https://lingmoumou-blog.oss-cn-beijing.aliyuncs.com/blog/1326f080/page_9.png" alt="同步处理与异步处理请求流程"></p>
+<p>在Servlet 3.0之前，Servlet采用Thread-Per-Request的方式处理请求，即每一次Http请求都由某一个线程从头到尾负责处理，也就是<strong>同步处理请求</strong>。如果一个请求需要进行IO操作，比如访问数据库、调用第三方服务接口等，那么其所对应的线程将同步地等待IO操作完成，而IO操作是非常慢的，所以此时的线程并不能及时地释放回线程池以供后续使用，在并发量越来越大的情况下，这将带来严重的性能问题。</p>
+<a id="more"></a>
+<p><img data-src="https://lingmoumou-blog.oss-cn-beijing.aliyuncs.com/blog/1326f080/13169342-ec4911e012331c29.jpg" alt="同步处理请求流程"></p>
+<p>而在Servlet3.0发布后，提供了一个新特性：<strong>异步处理请求</strong>。可以先释放容器分配给请求的线程与相关资源，减轻系统负担，释放了容器所分配线程的请求，其响应将被延后，可以在耗时处理完成（例如长时间的运算）时再对客户端进行响应。其请求流程为：</p>
+<p><img data-src="https://lingmoumou-blog.oss-cn-beijing.aliyuncs.com/blog/1326f080/13169342-4b8e6d78ce24c15c.jpg" alt="异步处理请求流程"></p>
+<p>通常开发过程中，一般上我们都是同步调用，即：程序按定义的顺序依次执行的过程，每一行代码执行过程必须等待上一行代码执行完毕后才执行。而异步调用指：程序在执行时，无需等待执行的返回值可继续执行后面的代码。显而易见，同步有依赖相关性，而异步没有，所以异步可并发执行，可提高执行效率，在相同的时间做更多的事情。</p>
+<h2 id="异步请求的实现"><a href="#异步请求的实现" class="headerlink" title="异步请求的实现"></a>异步请求的实现</h2><ul>
+<li><strong>获取AsyncContext</strong>：根据HttpServletRequest对象获取。</li>
+<li><strong>设置监听器</strong>: 可设置其开始、完成、异常、超时等事件的回调处理.</li>
+<li><strong>设置超时</strong>：通过setTimeout方法设置，单位：毫秒。</li>
+</ul>
+<p><img data-src="https://lingmoumou-blog.oss-cn-beijing.aliyuncs.com/blog/1326f080/QQ20200131001141.png" alt="监听器的接口代码"></p>
+<p>说明：</p>
+<ul>
+<li><strong>onStartAsync</strong>：异步线程开始时调用</li>
+<li><strong>onError</strong>：异步线程出错时调用</li>
+<li><strong>onTimeout</strong>：异步线程执行超时调用</li>
+<li><strong>onComplete</strong>：异步执行完毕时调用</li>
+</ul>
+<p>一般上，我们在超时或者异常时，会返回给前端相应的提示，比如说超时了，请再次请求等等，根据各业务进行自定义返回。同时，在异步调用完成时，一般需要执行一些清理工作或者其他相关操作。</p>
+<p>需要注意的是只有在调用request.startAsync前将监听器添加到AsyncContext，监听器的onStartAsync方法才会起作用，而调用startAsync前AsyncContext还不存在，所以第一次调用startAsync是不会被监听器中的onStartAsync方法捕获的，只有在超时后又重新开始的情况下onStartAsync方法才会起作用。</p>
+<h3 id="Servlet方式实现异步请求"><a href="#Servlet方式实现异步请求" class="headerlink" title="Servlet方式实现异步请求"></a>Servlet方式实现异步请求</h3><blockquote>
+<p>通过HttpServletRequest对象中获得一个AsyncContext对象，该对象构成了异步处理的上下文。</p>
+</blockquote>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// ServletController.java</span></span><br><span class="line"></span><br><span class="line"><span class="meta">@Slf</span>4j</span><br><span class="line"><span class="meta">@RestController</span></span><br><span class="line"><span class="meta">@RequestMapping</span>(<span class="string">"/servlet"</span>)</span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">AsyncController</span> </span>&#123;</span><br><span class="line">    </span><br><span class="line">    <span class="meta">@RequestMapping</span>(<span class="string">"/origin"</span>)</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">origin</span><span class="params">(HttpServletRequest request,</span></span></span><br><span class="line"><span class="function"><span class="params">            HttpServletResponse response)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line"></span><br><span class="line">        Thread.sleep(<span class="number">100</span>);</span><br><span class="line">        response.getWriter().println(<span class="string">"这是【正常】的请求返回"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="meta">@RequestMapping</span>(<span class="string">"/async"</span>)</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">todoAsync</span><span class="params">(HttpServletRequest request,HttpServletResponse response)</span> </span>&#123;</span><br><span class="line">        AsyncContext asyncContext = request.startAsync();</span><br><span class="line">        asyncContext.addListener(<span class="keyword">new</span> AsyncListener() &#123;</span><br><span class="line">            </span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">onTimeout</span><span class="params">(AsyncEvent event)</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">                log.info(<span class="string">"超时了："</span>);</span><br><span class="line">                <span class="comment">//做一些超时后的相关操作</span></span><br><span class="line">            &#125;</span><br><span class="line">            </span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">onStartAsync</span><span class="params">(AsyncEvent event)</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">                log.info(<span class="string">"线程开始"</span>);</span><br><span class="line">            &#125;</span><br><span class="line">            </span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">onError</span><span class="params">(AsyncEvent event)</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">                log.info(<span class="string">"发生错误："</span>,event.getThrowable());</span><br><span class="line">            &#125;</span><br><span class="line">            </span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">onComplete</span><span class="params">(AsyncEvent event)</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">                log.info(<span class="string">"执行完成"</span>);</span><br><span class="line">                <span class="comment">//这里可以做一些清理资源的操作</span></span><br><span class="line">            &#125;</span><br><span class="line">        &#125;);</span><br><span class="line"></span><br><span class="line">        <span class="comment">//设置超时时间</span></span><br><span class="line">        asyncContext.setTimeout(<span class="number">200</span>);</span><br><span class="line"></span><br><span class="line">        asyncContext.start(<span class="keyword">new</span> Runnable() &#123;            </span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">                <span class="keyword">try</span> &#123;</span><br><span class="line">                    Thread.sleep(<span class="number">100</span>);</span><br><span class="line">                    log.info(<span class="string">"内部线程："</span> + Thread.currentThread().getName());</span><br><span class="line">                    asyncContext.getResponse().setCharacterEncoding(<span class="string">"utf-8"</span>);</span><br><span class="line">                    asyncContext.getResponse().setContentType(<span class="string">"text/html;charset=UTF-8"</span>);</span><br><span class="line">                    asyncContext.getResponse().getWriter().println(<span class="string">"这是【异步】的请求返回"</span>);</span><br><span class="line">                &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">                    log.error(<span class="string">"异常："</span>,e);</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="comment">//异步请求完成通知,此时整个请求才完成</span></span><br><span class="line">                <span class="comment">//其实可以利用此特性 进行多条消息的推送把连接挂起。。</span></span><br><span class="line">                asyncContext.complete();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;);</span><br><span class="line">        <span class="comment">//此时之类 request的线程连接已经释放了</span></span><br><span class="line">        log.info(<span class="string">"线程："</span> + Thread.currentThread().getName());</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="Spring方式实现异步请求"><a href="#Spring方式实现异步请求" class="headerlink" title="Spring方式实现异步请求"></a>Spring方式实现异步请求</h3><p>在Spring中，有多种方式实现异步请求，比如callable、DeferredResult或者WebAsyncTask。每个的用法略有不同，可根据不同的业务场景选择不同的方式。</p>
+<h4 id="使用Callable异步处理请求"><a href="#使用Callable异步处理请求" class="headerlink" title="使用Callable异步处理请求"></a>使用Callable异步处理请求</h4><blockquote>
+<p>使用很简单，直接返回的参数包裹一层callable即可，可以继承WebMvcConfigurerAdapter类来设置默认线程池和超时处理</p>
+</blockquote>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// AsyncController.java</span></span><br><span class="line"></span><br><span class="line"><span class="meta">@Slf</span>4j</span><br><span class="line"><span class="meta">@RestController</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">AsyncController</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">   <span class="meta">@RequestMapping</span>(<span class="string">"/order"</span>)</span><br><span class="line">   <span class="function"><span class="keyword">public</span> Callable&lt;String&gt; <span class="title">order</span><span class="params">()</span> </span>&#123;</span><br><span class="line">       log.info(<span class="string">"主线程开始"</span>);</span><br><span class="line">       Callable&lt;String&gt; result = <span class="keyword">new</span> Callable&lt;String&gt;() &#123;</span><br><span class="line">           <span class="meta">@Override</span></span><br><span class="line">           <span class="function"><span class="keyword">public</span> String <span class="title">call</span><span class="params">()</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">               log.info(<span class="string">"副线程开始"</span>);</span><br><span class="line">               Thread.sleep(<span class="number">1000</span>);</span><br><span class="line">               log.info(<span class="string">"副线程返回"</span>);</span><br><span class="line">               <span class="keyword">return</span> <span class="string">"success"</span>;</span><br><span class="line">           &#125;</span><br><span class="line">       &#125;;</span><br><span class="line">       log.info(<span class="string">"主线程返回"</span>);</span><br><span class="line">       <span class="keyword">return</span> result;</span><br><span class="line">   &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="使用DeferredResult异步处理请求"><a href="#使用DeferredResult异步处理请求" class="headerlink" title="使用DeferredResult异步处理请求"></a>使用DeferredResult异步处理请求</h4><blockquote>
+<p>相比于Callable，DeferredResult可以处理一些相对复杂一些的业务逻辑，最主要还是可以在另一个线程里面进行业务处理及返回，即可在两个完全不相干的线程间的通信。</p>
+</blockquote>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// DeferredResultController.java</span></span><br><span class="line"></span><br><span class="line"><span class="meta">@Slf</span>4j</span><br><span class="line"><span class="meta">@RestController</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">DeferredResultController</span> </span>&#123;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> ExecutorService FIXED_THREAD_POOL = Executors.newFixedThreadPool(<span class="number">30</span>);     <span class="comment">// 线程池</span></span><br><span class="line">    </span><br><span class="line">    <span class="meta">@RequestMapping</span>(<span class="string">"/deferredresult"</span>)</span><br><span class="line">    <span class="function"><span class="keyword">public</span> DeferredResult&lt;String&gt; <span class="title">deferredResult</span><span class="params">()</span></span>&#123;</span><br><span class="line">        log.info(<span class="string">"外部线程："</span> + Thread.currentThread().getName());</span><br><span class="line">        <span class="comment">//设置超时时间</span></span><br><span class="line">        DeferredResult&lt;String&gt; result = <span class="keyword">new</span> DeferredResult&lt;String&gt;(<span class="number">60</span>*<span class="number">1000L</span>);</span><br><span class="line">        <span class="comment">//处理超时事件 采用委托机制</span></span><br><span class="line">        result.onTimeout(() -&gt; &#123;</span><br><span class="line">            log.error(<span class="string">"DeferredResult超时"</span>);</span><br><span class="line">            result.setResult(<span class="string">"超时了!"</span>);</span><br><span class="line">        &#125;);</span><br><span class="line"></span><br><span class="line">        result.onCompletion(() -&gt; log.info(<span class="string">"调用完成"</span>));</span><br><span class="line">        </span><br><span class="line">        FIXED_THREAD_POOL.execute(() -&gt; &#123;</span><br><span class="line">            log.info(<span class="string">"内部线程："</span> + Thread.currentThread().getName());</span><br><span class="line">            <span class="comment">//返回结果</span></span><br><span class="line">            result.setResult(<span class="string">"DeferredResult!!"</span>);</span><br><span class="line">        &#125;);</span><br><span class="line">        <span class="keyword">return</span> result;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>下面将通过DeferredResult方式，模拟以下流程：</p>
+<p><img data-src="https://lingmoumou-blog.oss-cn-beijing.aliyuncs.com/blog/1326f080/page_10.png" alt="同步处理与异步处理请求流程"></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// AsyncController.java</span></span><br><span class="line"></span><br><span class="line"><span class="meta">@Slf</span>4j</span><br><span class="line"><span class="meta">@RestController</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">AsyncController</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">   <span class="meta">@Autowired</span></span><br><span class="line">    <span class="keyword">private</span> MockQueue mockQueue;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Autowired</span></span><br><span class="line">    <span class="keyword">private</span> DeferredResultHolder deferredResultHolder;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@RequestMapping</span>(<span class="string">"/order"</span>)</span><br><span class="line">    <span class="function"><span class="keyword">public</span> DeferredResult&lt;String&gt; <span class="title">order</span><span class="params">()</span> <span class="keyword">throws</span> InterruptedException </span>&#123;</span><br><span class="line">        log.info(<span class="string">"主线程开始"</span>);</span><br><span class="line">        String orderNumber= RandomStringUtils.randomNumeric(<span class="number">8</span>);</span><br><span class="line">        mockQueue.setPlaceOrder(orderNumber);</span><br><span class="line"></span><br><span class="line">        DeferredResult&lt;String&gt; result=<span class="keyword">new</span> DeferredResult&lt;&gt;();</span><br><span class="line"></span><br><span class="line">        deferredResultHolder.getMap().put(orderNumber,result);</span><br><span class="line">        log.info(<span class="string">"主线程返回"</span>);</span><br><span class="line">        <span class="keyword">return</span> result;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// MockQueue.java</span></span><br><span class="line"></span><br><span class="line"><span class="meta">@Slf</span>4j</span><br><span class="line"><span class="meta">@Data</span></span><br><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">MockQueue</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> String placeOrder;</span><br><span class="line">    <span class="keyword">private</span> String completeOrder;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setPlaceOrder</span><span class="params">(String placeOrder)</span> <span class="keyword">throws</span> InterruptedException </span>&#123;</span><br><span class="line">        <span class="keyword">new</span> Thread(()-&gt;&#123;</span><br><span class="line">            log.info(<span class="string">"接到下单请求,"</span>+placeOrder);</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                Thread.sleep(<span class="number">1000</span>);</span><br><span class="line">            &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">                e.printStackTrace();</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">this</span>.completeOrder=placeOrder;</span><br><span class="line">            log.info(<span class="string">"下单请求处理完毕,"</span>+placeOrder);</span><br><span class="line">        &#125;).start();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// QueueListener.java</span></span><br><span class="line"></span><br><span class="line"><span class="meta">@Slf</span>4j</span><br><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">QueueListener</span> <span class="keyword">implements</span> <span class="title">ApplicationListener</span>&lt;<span class="title">ContextRefreshedEvent</span>&gt; </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Autowired</span></span><br><span class="line">    <span class="keyword">private</span> MockQueue mockQueue;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Autowired</span></span><br><span class="line">    <span class="keyword">private</span> DeferredResultHolder deferredResultHolder;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">onApplicationEvent</span><span class="params">(ContextRefreshedEvent event)</span></span>&#123;</span><br><span class="line">        <span class="keyword">new</span> Thread(()-&gt;&#123;</span><br><span class="line">            <span class="keyword">while</span> (<span class="keyword">true</span>)&#123;</span><br><span class="line">                <span class="keyword">if</span>(StringUtils.isNotBlank(mockQueue.getCompleteOrder()))&#123;</span><br><span class="line">                    String orderNumber=mockQueue.getCompleteOrder();</span><br><span class="line">                    log.info(<span class="string">"返回订单处理结果："</span>+orderNumber);</span><br><span class="line">                    deferredResultHolder.getMap().get(orderNumber).setResult(<span class="string">"place order"</span>);</span><br><span class="line">                    mockQueue.setCompleteOrder(<span class="keyword">null</span>);</span><br><span class="line">                &#125;<span class="keyword">else</span> &#123;</span><br><span class="line">                    <span class="keyword">try</span> &#123;</span><br><span class="line">                        Thread.sleep(<span class="number">100</span>);</span><br><span class="line">                    &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">                        e.printStackTrace();</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;).start();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// DeferredResultHolder.java</span></span><br><span class="line"></span><br><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">DeferredResultHolder</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> Map&lt;String, DeferredResult&lt;String&gt;&gt; map=<span class="keyword">new</span> HashMap&lt;String,DeferredResult&lt;String&gt;&gt;();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> Map&lt;String,DeferredResult&lt;String&gt;&gt; getMap()&#123;</span><br><span class="line">        <span class="keyword">return</span> map;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setMap</span><span class="params">(Map&lt;String,DeferredResult&lt;String&gt;&gt; map)</span></span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.map=map;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="使用WebAsyncTask-异步处理请求"><a href="#使用WebAsyncTask-异步处理请求" class="headerlink" title="使用WebAsyncTask 异步处理请求"></a>使用WebAsyncTask 异步处理请求</h4><blockquote>
+<p>和Callable差不多，在Callable外包一层，给WebAsyncTask设置一个超时回调，即可实现超时处理</p>
+</blockquote>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// AsyncController.java</span></span><br><span class="line"></span><br><span class="line"><span class="meta">@Slf</span>4j</span><br><span class="line"><span class="meta">@RestController</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">AsyncController</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">   <span class="meta">@RequestMapping</span>(<span class="string">"/webAsyncTask"</span>)</span><br><span class="line">   <span class="function"><span class="keyword">public</span> WebAsyncTask&lt;String&gt; <span class="title">asyncTaskTimeout</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="comment">// 打印处理线程名</span></span><br><span class="line">        log.info(format(<span class="string">"请求处理线程："</span>+ currentThread().getName()));</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 模拟开启一个异步任务，超时时间为10s</span></span><br><span class="line">        WebAsyncTask&lt;String&gt; asyncTask = <span class="keyword">new</span> WebAsyncTask&lt;&gt;(<span class="number">10</span> * <span class="number">1000L</span>, () -&gt; &#123;</span><br><span class="line">            log.info(format(<span class="string">"异步工作线程："</span>+ currentThread().getName()));</span><br><span class="line">            <span class="comment">// 任务处理时间5s，不超时</span></span><br><span class="line">            sleep(<span class="number">15</span> * <span class="number">1000L</span>);</span><br><span class="line">            <span class="keyword">return</span> TIME_MESSAGE;</span><br><span class="line">        &#125;);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 任务执行完成时调用该方法</span></span><br><span class="line">        asyncTask.onCompletion(() -&gt; log.info(<span class="string">"任务执行完成"</span>));</span><br><span class="line"></span><br><span class="line">        asyncTask.onTimeout(() -&gt; &#123;</span><br><span class="line">            log.info(<span class="string">"任务执行超时"</span>);</span><br><span class="line">            <span class="keyword">return</span> TIME_MESSAGE;</span><br><span class="line">        &#125;);</span><br><span class="line"></span><br><span class="line">        log.info(<span class="string">"继续处理其他事情"</span>);</span><br><span class="line">        <span class="keyword">return</span> asyncTask;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="异步处理配置"><a href="#异步处理配置" class="headerlink" title="异步处理配置"></a>异步处理配置</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Configuration</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">WebConfig</span> <span class="keyword">extends</span> <span class="title">WebMvcConfigurationSupport</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">   <span class="meta">@Override</span></span><br><span class="line">   <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">configureAsyncSupport</span><span class="params">(AsyncSupportConfigurer configurer)</span></span>&#123;</span><br><span class="line">       configurer.setDefaultTimeout(<span class="number">1000</span>);</span><br><span class="line">   &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>CallableProcessingInterceptor与CallableInterceptor中的内容大致相似，但多了一些设置超时时间等方法。可以WebConfig中设置异步处理的超时时间，也可以setTaskExecutor设置相关线程池。<br><img data-src="https://lingmoumou-blog.oss-cn-beijing.aliyuncs.com/blog/1326f080/QQ20200131005837.png" alt="CallableProcessingInterceptor.java"></p>
+<h2 id="异步调用的实现"><a href="#异步调用的实现" class="headerlink" title="异步调用的实现"></a>异步调用的实现</h2><p>在SpringBoot中使用异步调用是很简单的，只需要使用<code>@Async</code>注解即可实现方法的异步调用。</p>
+<p>需要在启动类加入<code>@EnableAsync</code>使异步调用<code>@Async</code>注解生效。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@SpringBootApplication</span></span><br><span class="line"><span class="meta">@EnableAsync</span></span><br><span class="line"><span class="meta">@Slf</span>4j</span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Chapter21Application</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        SpringApplication.run(Chapter21Application<span class="class">.<span class="keyword">class</span>, <span class="title">args</span>)</span>;</span><br><span class="line">        log.info(<span class="string">"Chapter21启动!"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h3 id="Async异步调用"><a href="#Async异步调用" class="headerlink" title="@Async异步调用"></a>@Async异步调用</h3><p>使用@Async很简单，只需要在需要异步执行的方法上加入此注解即可。这里创建一个控制层和一个服务层，进行简单示例下。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// SyncService.java</span></span><br><span class="line"></span><br><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">SyncService</span> </span>&#123;</span><br><span class="line">    </span><br><span class="line">    <span class="meta">@Async</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">asyncEvent</span><span class="params">()</span> <span class="keyword">throws</span> InterruptedException </span>&#123;</span><br><span class="line">        <span class="comment">//休眠1s</span></span><br><span class="line">        Thread.sleep(<span class="number">1000</span>);</span><br><span class="line">        <span class="comment">//log.info("异步方法输出：&#123;&#125;!", System.currentTimeMillis());</span></span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">syncEvent</span><span class="params">()</span> <span class="keyword">throws</span> InterruptedException </span>&#123;</span><br><span class="line">        Thread.sleep(<span class="number">1000</span>);</span><br><span class="line">        <span class="comment">//log.info("同步方法输出：&#123;&#125;!", System.currentTimeMillis());</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// AsyncController.java</span></span><br><span class="line"></span><br><span class="line"><span class="meta">@RestController</span></span><br><span class="line"><span class="meta">@Slf</span>4j</span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">AsyncController</span> </span>&#123;</span><br><span class="line">    </span><br><span class="line">    <span class="meta">@Autowired</span></span><br><span class="line">    SyncService syncService;</span><br><span class="line">    </span><br><span class="line">    <span class="meta">@GetMapping</span>(<span class="string">"/async"</span>)</span><br><span class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">doAsync</span><span class="params">()</span> <span class="keyword">throws</span> InterruptedException </span>&#123;</span><br><span class="line">        <span class="keyword">long</span> start = System.currentTimeMillis();</span><br><span class="line">        log.info(<span class="string">"方法执行开始：&#123;&#125;"</span>, start);</span><br><span class="line">        <span class="comment">//调用同步方法</span></span><br><span class="line">        syncService.syncEvent();</span><br><span class="line">        <span class="keyword">long</span> syncTime = System.currentTimeMillis();</span><br><span class="line">        log.info(<span class="string">"同步方法用时：&#123;&#125;"</span>, syncTime - start);</span><br><span class="line">        <span class="comment">//调用异步方法</span></span><br><span class="line">        syncService.asyncEvent();</span><br><span class="line">        <span class="keyword">long</span> asyncTime = System.currentTimeMillis();</span><br><span class="line">        log.info(<span class="string">"异步方法用时：&#123;&#125;"</span>, asyncTime - syncTime);</span><br><span class="line">        log.info(<span class="string">"方法执行完成：&#123;&#125;!"</span>,asyncTime);</span><br><span class="line">        <span class="keyword">return</span> <span class="string">"async!!!"</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h3 id="自定义线程池"><a href="#自定义线程池" class="headerlink" title="自定义线程池"></a>自定义线程池</h3><p>在默认情况下，系统使用的是默认的SimpleAsyncTaskExecutor进行线程创建。所以一般上我们会自定义线程池来进行线程的复用。</p>
+<p>关于ThreadPoolTaskExecutor参数说明：</p>
+<ul>
+<li><strong>corePoolSize</strong>：线程池维护线程的最少数量</li>
+<li><strong>keepAliveSeconds</strong>：允许的空闲时间,当超过了核心线程出之外的线程在空闲时间到达之后会被销毁</li>
+<li><strong>maxPoolSize</strong>：线程池维护线程的最大数量,只有在缓冲队列满了之后才会申请超过核心线程数的线程</li>
+<li><strong>queueCapacity</strong>：缓存队列</li>
+<li><strong>rejectedExecutionHandler</strong>：线程池对拒绝任务（无线程可用）的处理策略。这里采用了CallerRunsPolicy策略，当线程池没有处理能力的时候，该策略会直接在 execute 方法的调用线程中运行被拒绝的任务；如果执行程序已关闭，则会丢弃该任务。还有一个是AbortPolicy策略：处理程序遭到拒绝将抛出运行时RejectedExecutionException。</li>
+</ul>
+<p>而在一些场景下，若需要在关闭线程池时等待当前调度任务完成后才开始关闭，可以通过简单的配置，进行优雅的停机策略配置。关键就是通过setWaitForTasksToCompleteOnShutdown(true)和setAwaitTerminationSeconds方法。</p>
+<ul>
+<li><strong>setWaitForTasksToCompleteOnShutdown</strong>: 表明等待所有线程执行完，默认为false。</li>
+<li><strong>setAwaitTerminationSeconds</strong>: 等待的时间，因为不能无限的等待下去。</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Config.java</span></span><br><span class="line"></span><br><span class="line"><span class="meta">@Configuration</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Config</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 配置线程池</span></span><br><span class="line">    <span class="meta">@Bean</span>(name = <span class="string">"asyncPoolTaskExecutor"</span>)</span><br><span class="line">    <span class="function"><span class="keyword">public</span> ThreadPoolTaskExecutor <span class="title">getAsyncThreadPoolTaskExecutor</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        ThreadPoolTaskExecutor taskExecutor = <span class="keyword">new</span> ThreadPoolTaskExecutor();</span><br><span class="line">        taskExecutor.setCorePoolSize(<span class="number">20</span>);</span><br><span class="line">        taskExecutor.setMaxPoolSize(<span class="number">200</span>);</span><br><span class="line">        taskExecutor.setQueueCapacity(<span class="number">25</span>);</span><br><span class="line">        taskExecutor.setKeepAliveSeconds(<span class="number">200</span>);</span><br><span class="line">        taskExecutor.setThreadNamePrefix(<span class="string">"oKong-"</span>);</span><br><span class="line">        <span class="comment">// 线程池对拒绝任务（无线程可用）的处理策略，目前只支持AbortPolicy、CallerRunsPolicy；默认为后者</span></span><br><span class="line">        taskExecutor.setRejectedExecutionHandler(<span class="keyword">new</span> ThreadPoolExecutor.CallerRunsPolicy());</span><br><span class="line">        taskExecutor.initialize();</span><br><span class="line">        <span class="keyword">return</span> taskExecutor;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// SyncService.java</span></span><br><span class="line"></span><br><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="meta">@Slf</span>4j</span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">SyncService</span> </span>&#123;</span><br><span class="line">    <span class="meta">@Async</span>(<span class="string">"asyncPoolTaskExecutor"</span>)</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">asyncEvent</span><span class="params">()</span> <span class="keyword">throws</span> InterruptedException </span>&#123;</span><br><span class="line">        <span class="comment">//休眠1s</span></span><br><span class="line">        Thread.sleep(<span class="number">1000</span>);</span><br><span class="line">        log.info(<span class="string">"异步方法内部线程名称：&#123;&#125;!"</span>, Thread.currentThread().getName());</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="异步回调及超时处理"><a href="#异步回调及超时处理" class="headerlink" title="异步回调及超时处理"></a>异步回调及超时处理</h3><blockquote>
+<p>对于一些业务场景下，需要异步回调的返回值时，就需要使用异步回调来完成了。主要就是通过Future进行异步回调。</p>
+</blockquote>
+<h4 id="异步回调"><a href="#异步回调" class="headerlink" title="异步回调"></a>异步回调</h4><ol>
+<li>修改下异步方法的返回类型，加入Future。</li>
+<li>其中AsyncResult是Spring提供的一个Future接口的子类。</li>
+<li>然后通过isDone方法，判断是否已经执行完毕。</li>
+</ol>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// SyncService.java</span></span><br><span class="line"></span><br><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="meta">@Slf</span>4j</span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">SyncService</span> </span>&#123;</span><br><span class="line">    <span class="meta">@Async</span>(<span class="string">"asyncPoolTaskExecutor"</span>)</span><br><span class="line">    <span class="function"><span class="keyword">public</span> Future&lt;String&gt; <span class="title">asyncEvent</span><span class="params">()</span> <span class="keyword">throws</span> InterruptedException </span>&#123;</span><br><span class="line">        <span class="comment">//休眠1s</span></span><br><span class="line">        Thread.sleep(<span class="number">1000</span>);</span><br><span class="line">        log.info(<span class="string">"异步方法内部线程名称：&#123;&#125;!"</span>, Thread.currentThread().getName());</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> AsyncResult&lt;&gt;(<span class="string">"异步方法返回值"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// AsyncController.java</span></span><br><span class="line"></span><br><span class="line"><span class="meta">@RestController</span></span><br><span class="line"><span class="meta">@Slf</span>4j</span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">AsyncController</span> </span>&#123;</span><br><span class="line">    <span class="meta">@GetMapping</span>(<span class="string">"/async"</span>)</span><br><span class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">doAsync</span><span class="params">()</span> <span class="keyword">throws</span> InterruptedException </span>&#123;</span><br><span class="line">        <span class="keyword">long</span> start = System.currentTimeMillis();</span><br><span class="line">        log.info(<span class="string">"方法执行开始：&#123;&#125;"</span>, start);</span><br><span class="line">        <span class="comment">//调用同步方法</span></span><br><span class="line">        syncService.syncEvent();</span><br><span class="line">        <span class="keyword">long</span> syncTime = System.currentTimeMillis();</span><br><span class="line">        log.info(<span class="string">"同步方法用时：&#123;&#125;"</span>, syncTime - start);</span><br><span class="line">        <span class="comment">//调用异步方法</span></span><br><span class="line">        Future&lt;String&gt; doFutrue = syncService.asyncEvent();</span><br><span class="line">        <span class="keyword">while</span>(<span class="keyword">true</span>) &#123;</span><br><span class="line">            <span class="comment">//判断异步任务是否完成</span></span><br><span class="line">            <span class="keyword">if</span>(doFutrue.isDone()) &#123;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            Thread.sleep(<span class="number">100</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">long</span> asyncTime = System.currentTimeMillis();</span><br><span class="line">        log.info(<span class="string">"异步方法用时：&#123;&#125;"</span>, asyncTime - syncTime);</span><br><span class="line">        log.info(<span class="string">"方法执行完成：&#123;&#125;!"</span>,asyncTime);</span><br><span class="line">        <span class="keyword">return</span> <span class="string">"async!!!"</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="超时处理"><a href="#超时处理" class="headerlink" title="超时处理"></a>超时处理</h4><blockquote>
+<p>对于一些需要异步回调的函数，不能无期限的等待下去，所以一般上需要设置超时时间，超时后可将线程释放，而不至于一直堵塞而占用资源。</p>
+</blockquote>
+<ol>
+<li>对于Future配置超时，很简单，通过get方法即可；</li>
+<li>超时后，会抛出异常TimeoutException类，此时可进行统一异常捕获即可。</li>
+</ol>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//get方法会一直堵塞，直到等待执行完成才返回</span></span><br><span class="line"><span class="comment">//get(long timeout, TimeUnit unit) 在设置时间类未返回结果，会直接排除异常TimeoutException，messages为null</span></span><br><span class="line">String result = doFutrue.get(<span class="number">60</span>, TimeUnit.SECONDS);<span class="comment">//60s</span></span><br></pre></td></tr></table></figure>
+<h2 id="异步请求与异步调用的区别"><a href="#异步请求与异步调用的区别" class="headerlink" title="异步请求与异步调用的区别"></a>异步请求与异步调用的区别</h2><p>两者的使用场景不同，异步请求用来解决并发请求对服务器造成的压力，从而提高对请求的吞吐量；而异步调用是用来做一些非主线流程且不需要实时计算和响应的任务，比如同步日志到kafka中做日志分析等。<br>异步请求是会一直等待response相应的，需要返回结果给客户端的；而异步调用我们往往会马上返回给客户端响应，完成这次整个的请求，至于异步调用的任务后台自己慢慢跑就行，客户端不会关心。</p>
+<h2 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h2>
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>Ling Moumou
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://lingmoumou.github.io/p/2020/01/30/1326f080/" title="SpringBoot 异步处理">https://lingmoumou.github.io/p/2020/01/30/1326f080/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/java/" rel="tag"># java</a>
+              <a href="/tags/spring/" rel="tag"># spring</a>
+              <a href="/tags/springboot/" rel="tag"># springboot</a>
+              <a href="/tags/spring-security/" rel="tag"># spring security</a>
+              <a href="/tags/async/" rel="tag"># async</a>
+              <a href="/tags/runnable/" rel="tag"># runnable</a>
+              <a href="/tags/deferredresult/" rel="tag"># deferredresult</a>
+              <a href="/tags/imooc/" rel="tag"># imooc</a>
+              <a href="/tags/Spring-Security开发安全的REST服务/" rel="tag"># Spring Security开发安全的REST服务</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/p/2020/01/30/50bf1f8f/" rel="prev" title="SpringBoot 文件的上传与下载">
+      <i class="fa fa-chevron-left"></i> SpringBoot 文件的上传与下载
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/p/2020/01/31/631e780c/" rel="next" title="Swagger介绍及使用">
+      Swagger介绍及使用 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#异步请求的实现"><span class="nav-number">1.</span> <span class="nav-text">异步请求的实现</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Servlet方式实现异步请求"><span class="nav-number">1.1.</span> <span class="nav-text">Servlet方式实现异步请求</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Spring方式实现异步请求"><span class="nav-number">1.2.</span> <span class="nav-text">Spring方式实现异步请求</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#使用Callable异步处理请求"><span class="nav-number">1.2.1.</span> <span class="nav-text">使用Callable异步处理请求</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#使用DeferredResult异步处理请求"><span class="nav-number">1.2.2.</span> <span class="nav-text">使用DeferredResult异步处理请求</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#使用WebAsyncTask-异步处理请求"><span class="nav-number">1.2.3.</span> <span class="nav-text">使用WebAsyncTask 异步处理请求</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#异步处理配置"><span class="nav-number">1.3.</span> <span class="nav-text">异步处理配置</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#异步调用的实现"><span class="nav-number">2.</span> <span class="nav-text">异步调用的实现</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Async异步调用"><span class="nav-number">2.1.</span> <span class="nav-text">@Async异步调用</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#自定义线程池"><span class="nav-number">2.2.</span> <span class="nav-text">自定义线程池</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#异步回调及超时处理"><span class="nav-number">2.3.</span> <span class="nav-text">异步回调及超时处理</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#异步回调"><span class="nav-number">2.3.1.</span> <span class="nav-text">异步回调</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#超时处理"><span class="nav-number">2.3.2.</span> <span class="nav-text">超时处理</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#异步请求与异步调用的区别"><span class="nav-number">3.</span> <span class="nav-text">异步请求与异步调用的区别</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考文献"><span class="nav-number">4.</span> <span class="nav-text">参考文献</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Ling Moumou</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">48</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">18</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">82</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2018 – 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Ling Moumou</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script data-pjax async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/lozad@1/dist/lozad.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script>
+<script src="/js/schemes/pisces.js"></script>
+<script src="/js/next-boot.js"></script>
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  <script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+    </div>
+</body>
+</html>

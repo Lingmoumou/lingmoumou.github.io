@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 3.9.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"lingmoumou.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":true,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="卷积神经网络基础笔记整理通过观察互相关运算可知，输入数据（这里以二维数组为例）的边缘部分相较于中间部分来说，使用的次数较少，对于一些存储重要信息的边缘数据来说，这无疑是重大的损失，这里可以通过填充来解决这一问题吗？？也就是在输入数据的边缘填充0，使得原来的边缘数据中心化？？？  padding解决不了这个问题，因为padding的内容其实是不包含信息量的0。  这个问题感觉是个不错的思考~但是又感">
+<meta name="keywords" content="datawhale,dl,深度学习,deep learning,动手学深度学习">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Task5 卷积神经网络基础；leNet；卷积神经网络进阶">
+<meta property="og:url" content="https://lingmoumou.github.io/p/2020/02/13/aa23684a/index.html">
+<meta property="og:site_name" content="Lingmoumou&#39;s Blog">
+<meta property="og:description" content="卷积神经网络基础笔记整理通过观察互相关运算可知，输入数据（这里以二维数组为例）的边缘部分相较于中间部分来说，使用的次数较少，对于一些存储重要信息的边缘数据来说，这无疑是重大的损失，这里可以通过填充来解决这一问题吗？？也就是在输入数据的边缘填充0，使得原来的边缘数据中心化？？？  padding解决不了这个问题，因为padding的内容其实是不包含信息量的0。  这个问题感觉是个不错的思考~但是又感">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:updated_time" content="2021-02-06T04:38:58.000Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Task5 卷积神经网络基础；leNet；卷积神经网络进阶">
+<meta name="twitter:description" content="卷积神经网络基础笔记整理通过观察互相关运算可知，输入数据（这里以二维数组为例）的边缘部分相较于中间部分来说，使用的次数较少，对于一些存储重要信息的边缘数据来说，这无疑是重大的损失，这里可以通过填充来解决这一问题吗？？也就是在输入数据的边缘填充0，使得原来的边缘数据中心化？？？  padding解决不了这个问题，因为padding的内容其实是不包含信息量的0。  这个问题感觉是个不错的思考~但是又感">
+
+<link rel="canonical" href="https://lingmoumou.github.io/p/2020/02/13/aa23684a/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Task5 卷积神经网络基础；leNet；卷积神经网络进阶 | Lingmoumou's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Lingmoumou's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">きっといつかって愿うまま</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://lingmoumou.github.io/p/2020/02/13/aa23684a/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Ling Moumou">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Lingmoumou's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Task5 卷积神经网络基础；leNet；卷积神经网络进阶
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-02-13 22:24:47" itemprop="dateCreated datePublished" datetime="2020-02-13T22:24:47+08:00">2020-02-13</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-02-06 12:38:58" itemprop="dateModified" datetime="2021-02-06T12:38:58+08:00">2021-02-06</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Datawhale/" itemprop="url" rel="index"><span itemprop="name">Datawhale</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Datawhale/动手学深度学习/" itemprop="url" rel="index"><span itemprop="name">动手学深度学习</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="卷积神经网络基础"><a href="#卷积神经网络基础" class="headerlink" title="卷积神经网络基础"></a>卷积神经网络基础</h1><h2 id="笔记整理"><a href="#笔记整理" class="headerlink" title="笔记整理"></a>笔记整理</h2><p>通过观察互相关运算可知，输入数据（这里以二维数组为例）的边缘部分相较于中间部分来说，使用的次数较少，对于一些存储重要信息的边缘数据来说，这无疑是重大的损失，这里可以通过填充来解决这一问题吗？？也就是在输入数据的边缘填充0，使得原来的边缘数据中心化？？？<br>  padding解决不了这个问题，因为padding的内容其实是不包含信息量的0。<br>  这个问题感觉是个不错的思考~但是又感觉很奇怪，平时是遇不到这个问题的。<br>  比如给你一张狗的图片，shape 224<em>224，你换成 222</em>222，你不可能不认识它了。<br>  比如即使你使用7<em>7的大卷积核，损失的也仅仅是边缘的3个像素而已。<br>  更何况现在都是3</em>3的卷积核，那1个像素是不会包含什么重要信息的。</p>
+<p>  padding的用途之一就是弥补特征提取时可能造成的边缘信息缺失。我们人在观察图片内容的过程，其实也是就是一个特征提取的过程。人在拍摄照片时，习惯将重要的事物放在图片中央，所以，在用卷积操作提取图片特征时，中间运算次数多，两边少，这是能满足大多数图像重要信息提取的。但是，当你的图片中边缘有重要信息，而卷积核又取得相对较大时，为了更好的保留边缘信息，我们可以考虑使用SAME padding，保持特征图不缩小(具体计算公式见我给出的PPT)。楼上这位朋友解释说“padding解决不了这个问题，因为padding的内容其实是不包含信息量的0。”，这不太对。因为他忽略了虽然padding的0不含信息，但是原始图片(或是FM)的边缘是包含信息的啊，而且你认为边缘信息对你当前要处理的任务来说是重要的，所以，你在要SAME padding处理，以尽可能多提取边缘信息啊。</p>
+<a id="more"></a>
+<p>  老师提出问题<br>  conv2d.weight.data -= lr <em> conv2d.weight.grad<br>  conv2d.bias.data -= lr </em> conv2d.bias.grad<br>  上面两行代码，如果删掉.data会发生什么？如果遇到一些问题，如何解决？<br>  经测试：如果删掉.data，也就是代码变为：<br>  conv2d.weight -= lr <em> conv2d.weight.grad<br>  conv2d.bias -= lr </em> conv2d.bias.grad<br>  会报错：RuntimeError: a leaf Variable that requires grad has been used in an in-place operation.<br>  这里给出一种解决方法：<br>  with torch.no_grad( ):<br>      conv2d.weight -= lr <em> conv2d.weight.grad<br>      conv2d.bias -= lr </em> conv2d.bias.grad</p>
+<p>  为什么两个连续的3×3卷积核的感受野与一个5×5卷积核的感受野相同？<br>    比如一个7X7的图像，经过一次5<em>5的卷积核后形成一个3</em>3的特征图；<br>    同样一个7X7的图像，经过两次次3<em>3的卷积核后才形成形成一个3</em>3的特征图。</p>
+<p>  例子中的Kernel都是固定值，但是再torch的nn.Conv2d()中只给出了kernel_size的值，这是为什么，是因为kernel value也是一个学习的变量吗？<br>    kernel_size 是需要手动调整的，但是在训练过程中并不需要学习。<br>    因此kernel_size准确来说是一个超参数，目前越来越趋向于使用小的卷积核，如1<em>1，3</em>3。</p>
+<pre><code>kernel_size（即卷积核大小）这是需要人为设定的参数，该参数是不需要学习的，当然大小不同，卷积结果也是不同的。经过大量实验表明，大多选用1*1、3*3、5*5等尺寸较小且长宽为奇数的卷积核。
+对于卷积核内的数值（可以认为是对应卷积作用区域下像素值的权重大小），这个数值是需要学习。当给定kernel_size时，函数即会初始化该卷积核内的数值。
+</code></pre><p>  卷积层和池化的区别？<br>    最大的区别是，池化层没有需要学习的特征<br>    卷积层用来学习识别某一种特征<br>    池化层的主要作用是降维<br>    卷积层当设置步长&gt;1时也可以用来完成降维的工作</p>
+<h1 id="leNet"><a href="#leNet" class="headerlink" title="leNet"></a>leNet</h1><h2 id="笔记整理-1"><a href="#笔记整理-1" class="headerlink" title="笔记整理"></a>笔记整理</h2><p>在训练测试过程中，每次都对optimizer进行清零处理，为啥结果的acc还是呈现递增的趋势<br>  acc 是 accuracy，准确率，当然是越高越好啦。<br>  optimizer = optim.SGD(net.parameters(), lr=lr)，对优化器清零是清除的梯度，防止梯度累加，为下一波梯度计算留空间。而学习的参数并不清零，所以参数越来越优。<br>  和前面梯度优化的例子一样，清零不影响网络的记忆性（不能说是连续的，目前的还很难达到连续性智能）</p>
+<p>1、在构建网络时，卷积核应该怎么设置呢？这块可以讲解下吗？还是说可以通过梯度传播调整<br>2、卷积的时候图像个数增加是因为引入多个卷积核吗？<br>3、构建网络时时是否每次卷积完毕必须引入池化层？还是说这个看网络设计者的调节</p>
+<ol>
+<li>很多同学都在问这块的问题，如何设计神经网络，其实不是这么课程重点需要关注的问题。<br> 实际使用时往往不需要你来设计，基本上都是用经典结构，最多是进行一些改造。<br> 那么到底如何设计呢？这块一两句话肯定说不清，可以按照发展顺序阅读经典论文，去寻求一些模型设计经验的线索。<br> LeNet -&gt; AlexNet -&gt; VGG -&gt; GoogleNet -&gt; ResNet -&gt; DenseNet 等等，后面就不说了，还有数不尽的论文等待着去学习。。。</li>
+<li>这个问题提问我没太看明白</li>
+<li>不是每个卷积层后面都要池化，经常是多个卷积层后面接一个池化层。<br> 池化是为了降维，我们最终希望提取到的是一些抽象的有代表性的特征，而不是很多很多感受野非常小的细节特征，例如纹理，颜色等。<br> 而且有的网络也会不使用池化层，而是使用步长&gt;1的卷积层来替代pool层完成降维的工作。</li>
+</ol>
+<p>池化层可以改变通道数？<br>池化层不是输入与输出的通道数相同，池化层的内核和padding可以改变特征的宽和高，但是通道数量不是不变的吗？<br>  标准的池化层不改变通道数，手动实现当然更改平均池化或者最大池化运算的通道数层，但效果差异不大，因为可以通过卷积层改变通道数。</p>
+<p>这里选择的池化，放大放小的比例，通道数似乎没有明确的说明，原理是什么？？<br>如果是经验数据的话，这个可不可以成为学习的对象，通过调整卷积核和padding的大小能否选择出更好的网络？？<br>  当然可以通过调整看看会不会效果更好，这些都是人为设定的。</p>
+<p>请问从pooling的6通道变成卷积层的16通道的详细变换过程是怎样的，依据是什么？<br>  通道的数量取决于卷积核的数量，只不过LeNet的作者选择了16个</p>
+<p>在卷积、池化的过程中，会出现通到数增加的情况，这应该是为了尽可能地提取特征信息；在leNet网络里面，通道数的变化比例是最优的吗？？？  里面是否有理论支持，或者是一个经验数据呢？？？？？<br>  leNet网络里面的通道数变化比例在原始论文没有明确的理论支持，应该是一个经验数据</p>
+<h1 id="卷积神经网络进阶"><a href="#卷积神经网络进阶" class="headerlink" title="卷积神经网络进阶"></a>卷积神经网络进阶</h1><h2 id="笔记整理-2"><a href="#笔记整理-2" class="headerlink" title="笔记整理"></a>笔记整理</h2><p>这里的ALNet引入了一个概念，就是按某一个概率p将某处权重置0，那么按这个网络前进后，还可以进行反向传播吗？？？   还有就是我们这里按一定规律取消部分神经元的作用，也就相当于采用另一种模型方式，那么我们这里的AlexNet就相当于一个模型集了，这理论上应该可以从多方面提取特征信息；然而就像人的大脑分成很多部分一样，如果我们不是单纯地使用一个简单的概率来规划神经元的使用，而是将不同神经元分成不同的区域或者进行更有效的规划，会不会让AI更连续呢？？？ 就像张钹院士在18年的一次报告中提到的，对于不满足“5个条件”的数据，也能很好预测<br>  可以，不更新失活单元的权重就行了。</p>
+<p>多换一个数据集的话（主要是size的变化），NiN block是不是仅需要改变第一个Convolution的大小，而后续的1x1的Convolution保持不变？<br>  是的，你观察到了卷积和全连接的一个重要的差别，卷积其实不关心特征图的H和W。<br>  如果你从10分类shape224<em>224</em>3的彩色数据集，切换到一个2分类shape160<em>160</em>1的灰度图数据集。<br>  只需要替换第一个卷积的input_channel 和最后一个卷积或者全连接层的output_channel。<br>  而如果你是从彩色数据集换成了彩色数据集，第一个卷积甚至都不需要发生变化。</p>
+<p>卷积其实不关心特征图的H和W“的原因是什么呢？<br>  卷积的工作流程是，以一定的卷积核大小，一定的步长，在特征图的不同位置，用同一个卷积核来进行互相关运算。<br>  这就好像是，一个卷积核是用来提取某一种局部特征的，它在图像中的不同位置来寻找是否有符合它所关心的特征的局部区域。<br>  这种工作机制导致了图像的尺寸（宽和高）并不影响卷积运算，只有通道数的变化才会影响。</p>
+<p>inception网络第一个7<em>7卷积层后面为什么要加relu激活？<br>或者说b2中1</em>1卷积和3*3卷积为什么没加relu？还有inception定义中的p1 = F.relu(self.p1_1(x))，F是什么？<br>  F是torch.nn.functional，前面有<code>import torch.nn.functional as F</code><br>  激活的话</p>
+<ul>
+<li>1x1 conv除了改变channel数，还有增加非线性的作用，一般都会跟着一个激活层</li>
+<li>其他感觉比较玄学设计，CV里可能跟ReLU可以做到单侧抑制增加稀疏有关吧</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>Ling Moumou
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://lingmoumou.github.io/p/2020/02/13/aa23684a/" title="Task5 卷积神经网络基础；leNet；卷积神经网络进阶">https://lingmoumou.github.io/p/2020/02/13/aa23684a/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/datawhale/" rel="tag"># datawhale</a>
+              <a href="/tags/dl/" rel="tag"># dl</a>
+              <a href="/tags/深度学习/" rel="tag"># 深度学习</a>
+              <a href="/tags/deep-learning/" rel="tag"># deep learning</a>
+              <a href="/tags/动手学深度学习/" rel="tag"># 动手学深度学习</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/p/2020/02/13/92342664/" rel="prev" title="Task4 机器翻译及相关技术；注意力机制与Seq2seq模型；Transformer">
+      <i class="fa fa-chevron-left"></i> Task4 机器翻译及相关技术；注意力机制与Seq2seq模型；Transformer
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/p/2020/02/14/2a553567/" rel="next" title="Spring Security中的Token处理">
+      Spring Security中的Token处理 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#卷积神经网络基础"><span class="nav-number">1.</span> <span class="nav-text">卷积神经网络基础</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#笔记整理"><span class="nav-number">1.1.</span> <span class="nav-text">笔记整理</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#leNet"><span class="nav-number">2.</span> <span class="nav-text">leNet</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#笔记整理-1"><span class="nav-number">2.1.</span> <span class="nav-text">笔记整理</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#卷积神经网络进阶"><span class="nav-number">3.</span> <span class="nav-text">卷积神经网络进阶</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#笔记整理-2"><span class="nav-number">3.1.</span> <span class="nav-text">笔记整理</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Ling Moumou</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">48</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">18</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">82</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2018 – 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Ling Moumou</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script data-pjax async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/lozad@1/dist/lozad.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script>
+<script src="/js/schemes/pisces.js"></script>
+<script src="/js/next-boot.js"></script>
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  <script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+    <div id="pjax">
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+          load: ['[tex]/mhchem'],
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+          packages: {'[+]': ['mhchem']},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = 'true';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+    </div>
+</body>
+</html>

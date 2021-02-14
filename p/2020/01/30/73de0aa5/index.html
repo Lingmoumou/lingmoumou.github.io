@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 3.9.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"lingmoumou.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":true,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="Restful是一种网络应用程序的设计风格和开发方式，基于HTTP，可以使用XML格式定义或JSON格式定义。Restful适用于移动互联网厂商作为业务使能接口的场景，实现第三方OTT调用移动网络资源的功能，动作类型为新增、变更、删除所调用资源。  Restful 特点 每一个URI代表1种资源； 客户端使用GET、POST、PUT、DELETE4个表示操作方式的动词对服务端资源进行操作：GET">
+<meta name="keywords" content="java,spring,springboot,spring security,imooc,Spring Security开发安全的REST服务,restful">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Restful API 简介">
+<meta property="og:url" content="https://lingmoumou.github.io/p/2020/01/30/73de0aa5/index.html">
+<meta property="og:site_name" content="Lingmoumou&#39;s Blog">
+<meta property="og:description" content="Restful是一种网络应用程序的设计风格和开发方式，基于HTTP，可以使用XML格式定义或JSON格式定义。Restful适用于移动互联网厂商作为业务使能接口的场景，实现第三方OTT调用移动网络资源的功能，动作类型为新增、变更、删除所调用资源。  Restful 特点 每一个URI代表1种资源； 客户端使用GET、POST、PUT、DELETE4个表示操作方式的动词对服务端资源进行操作：GET">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:updated_time" content="2021-01-31T13:53:26.000Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Restful API 简介">
+<meta name="twitter:description" content="Restful是一种网络应用程序的设计风格和开发方式，基于HTTP，可以使用XML格式定义或JSON格式定义。Restful适用于移动互联网厂商作为业务使能接口的场景，实现第三方OTT调用移动网络资源的功能，动作类型为新增、变更、删除所调用资源。  Restful 特点 每一个URI代表1种资源； 客户端使用GET、POST、PUT、DELETE4个表示操作方式的动词对服务端资源进行操作：GET">
+
+<link rel="canonical" href="https://lingmoumou.github.io/p/2020/01/30/73de0aa5/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Restful API 简介 | Lingmoumou's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Lingmoumou's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">きっといつかって愿うまま</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://lingmoumou.github.io/p/2020/01/30/73de0aa5/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Ling Moumou">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Lingmoumou's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Restful API 简介
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-01-30 15:28:39" itemprop="dateCreated datePublished" datetime="2020-01-30T15:28:39+08:00">2020-01-30</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-01-31 21:53:26" itemprop="dateModified" datetime="2021-01-31T21:53:26+08:00">2021-01-31</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Java/Spring-Security/" itemprop="url" rel="index"><span itemprop="name">Spring Security</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <blockquote>
+<p>Restful是一种网络应用程序的设计风格和开发方式，基于HTTP，可以使用XML格式定义或JSON格式定义。Restful适用于移动互联网厂商作为业务使能接口的场景，实现第三方OTT调用移动网络资源的功能，动作类型为新增、变更、删除所调用资源。</p>
+</blockquote>
+<h2 id="Restful-特点"><a href="#Restful-特点" class="headerlink" title="Restful 特点"></a>Restful 特点</h2><ol>
+<li>每一个URI代表1种资源；</li>
+<li>客户端使用GET、POST、PUT、DELETE4个表示操作方式的动词对服务端资源进行操作：GET用来获取资源，POST用来新建资源（也可以用于更新资源），PUT用来更新资源，DELETE用来删除资源；</li>
+<li>通过操作资源的表现形式来操作资源；</li>
+<li>资源的表现形式是XML或者HTML；</li>
+<li>客户端与服务端之间的交互在请求之间是无状态的，从客户端到服务端的每个请求都必须包含理解请求所必需的信息。</li>
+</ol>
+<a id="more"></a>
+<h2 id="Restful-常用URL"><a href="#Restful-常用URL" class="headerlink" title="Restful 常用URL"></a>Restful 常用URL</h2><table>
+<thead>
+<tr>
+<th style="text-align:center">操作</th>
+<th style="text-align:left">URL</th>
+<th style="text-align:center">RequestMethod</th>
+<th style="text-align:left">Restful URL</th>
+<th style="text-align:center">Restful RequestMethod</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">查询</td>
+<td style="text-align:left">/user/query?name=tom</td>
+<td style="text-align:center">GET</td>
+<td style="text-align:left">/user?name=tom</td>
+<td style="text-align:center">GET</td>
+</tr>
+<tr>
+<td style="text-align:center">详情</td>
+<td style="text-align:left">/user/getInfo?id=1</td>
+<td style="text-align:center">GET</td>
+<td style="text-align:left">/user/1</td>
+<td style="text-align:center">GET</td>
+</tr>
+<tr>
+<td style="text-align:center">创建</td>
+<td style="text-align:left">/user/create?name=tom</td>
+<td style="text-align:center">POST</td>
+<td style="text-align:left">/user</td>
+<td style="text-align:center">POST</td>
+</tr>
+<tr>
+<td style="text-align:center">修改</td>
+<td style="text-align:left">/user/update?id=1&amp;name=jerry</td>
+<td style="text-align:center">POST</td>
+<td style="text-align:left">/user/1</td>
+<td style="text-align:center">PUT</td>
+</tr>
+<tr>
+<td style="text-align:center">删除</td>
+<td style="text-align:left">/user/delete?id=1</td>
+<td style="text-align:center">GET</td>
+<td style="text-align:left">/user/1</td>
+<td style="text-align:center">DELETE</td>
+</tr>
+</tbody>
+</table>
+<h2 id="Spring相关常用注解"><a href="#Spring相关常用注解" class="headerlink" title="Spring相关常用注解"></a>Spring相关常用注解</h2><h3 id="RestController"><a href="#RestController" class="headerlink" title="@RestController"></a>@RestController</h3><blockquote>
+<p>标明Controller提供的是 Restful API</p>
+</blockquote>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// UserController.java</span></span><br><span class="line"></span><br><span class="line"><span class="meta">@Slf</span>4j</span><br><span class="line"><span class="meta">@Api</span>(tags = <span class="string">"用户管理"</span>, description = <span class="string">"管理用户的基本信息"</span>)</span><br><span class="line"><span class="meta">@RestController</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">UserController</span> </span>&#123;</span><br><span class="line">  <span class="comment">// ...</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="RequestMapping-及其变体"><a href="#RequestMapping-及其变体" class="headerlink" title="@RequestMapping 及其变体"></a>@RequestMapping 及其变体</h3><blockquote>
+<p>映射http请求的url到Java方法中</p>
+</blockquote>
+<ul>
+<li><strong>value</strong>: 指定request的地址</li>
+<li><strong>method</strong>: 指定请求的method类型， GET、POST、PUT、DELETE等</li>
+<li><strong>params</strong>: 指定request中包含的某些参数值，作为方法的输入，如：<code>@RequestParam(value = &quot;disable&quot;, required = false)</code><ul>
+<li><strong>value</strong>: 为传入的参数</li>
+<li><strong>required</strong>: 设置为 false，若传入的 value 为空值，则报错;设置为 true，若传入的 value 为空值，则返回 null.</li>
+</ul>
+</li>
+<li><strong>consumes</strong>: 指定处理请求的提交内容类型，例如 application/json, text/html;</li>
+<li><strong>produces</strong>: 指定返回的内容类型，仅当request请求头中的(Accept)类型中包含该指定类型才返回</li>
+<li><strong>headers</strong>: 指定request中包含某些指定的header值，让该方法处理请求</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// UserController.java</span></span><br><span class="line"></span><br><span class="line"><span class="meta">@RestController</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">UserController</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@ApiOperation</span>(value = <span class="string">"查询所有用户信息"</span>, notes = <span class="string">"查询所有用户信息"</span>, httpMethod = <span class="string">"GET"</span>)</span><br><span class="line">    <span class="meta">@RequestMapping</span>(value = <span class="string">"/user"</span>,method = RequestMethod.GET)</span><br><span class="line">    <span class="function"><span class="keyword">public</span> List&lt;User&gt; <span class="title">query</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> getUsers();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>随着Spring的发展，可以采用如下注解，简化@RequestMapping。</p>
+<h4 id="GetMapping"><a href="#GetMapping" class="headerlink" title="@GetMapping"></a>@GetMapping</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// UserController.java</span></span><br><span class="line"></span><br><span class="line"><span class="meta">@RestController</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">UserController</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@GetMapping</span>(<span class="string">"/user/&#123;id:\\d+&#125;"</span>)</span><br><span class="line">    <span class="meta">@JsonView</span>(User.UserDetailView<span class="class">.<span class="keyword">class</span>)</span></span><br><span class="line"><span class="class">    <span class="title">public</span> <span class="title">User</span> <span class="title">getInfo1</span>(@<span class="title">PathVariable</span> <span class="title">String</span> <span class="title">id</span>)</span>&#123;</span><br><span class="line">        User user=<span class="keyword">new</span> User();</span><br><span class="line">        user.setUsername(<span class="string">"tom"</span>);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> user;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="PostMapping"><a href="#PostMapping" class="headerlink" title="@PostMapping"></a>@PostMapping</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// UserController.java</span></span><br><span class="line"></span><br><span class="line"><span class="meta">@RestController</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">UserController</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@PostMapping</span>(<span class="string">"/user"</span>)</span><br><span class="line">    <span class="function"><span class="keyword">public</span> User <span class="title">create</span><span class="params">(@Valid @RequestBody User user, BindingResult errors)</span></span>&#123;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span>(errors.hasErrors())&#123;</span><br><span class="line">            errors.getAllErrors().stream().forEach(error-&gt;System.err.println(error.getDefaultMessage()));</span><br><span class="line">        &#125;</span><br><span class="line">        System.out.println(user.getId());</span><br><span class="line">        System.out.println(user.getUsername());</span><br><span class="line">        System.out.println(user.getPassword());</span><br><span class="line">        System.out.println(user.getBirthday());</span><br><span class="line"></span><br><span class="line">        user.setId(<span class="number">1</span>);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> user;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="PutMapping"><a href="#PutMapping" class="headerlink" title="@PutMapping"></a>@PutMapping</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// UserController.java</span></span><br><span class="line"></span><br><span class="line"><span class="meta">@RestController</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">UserController</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@PutMapping</span>(<span class="string">"/user/&#123;id:\\d+&#125;"</span>)</span><br><span class="line">    <span class="function"><span class="keyword">public</span> User <span class="title">update</span><span class="params">(@Valid @RequestBody User user, BindingResult errors)</span></span>&#123;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span>(errors.hasErrors())&#123;</span><br><span class="line">            errors.getAllErrors().forEach(error-&gt;&#123;</span><br><span class="line">                System.out.println(error.getDefaultMessage());</span><br><span class="line">            &#125;);</span><br><span class="line">        &#125;</span><br><span class="line">        System.out.println(user.getId());</span><br><span class="line">        System.out.println(user.getUsername());</span><br><span class="line">        System.out.println(user.getPassword());</span><br><span class="line">        System.out.println(user.getBirthday());</span><br><span class="line"></span><br><span class="line">        user.setId(<span class="number">1</span>);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> user;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="DeleteMapping"><a href="#DeleteMapping" class="headerlink" title="@DeleteMapping"></a>@DeleteMapping</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// UserController.java</span></span><br><span class="line"></span><br><span class="line"><span class="meta">@RestController</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">UserController</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@DeleteMapping</span>(<span class="string">"/user/&#123;id:\\d+&#125;"</span>)</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">delete</span><span class="params">(@PathVariable String id)</span></span>&#123;</span><br><span class="line">        System.out.println(id);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="PatchMapping"><a href="#PatchMapping" class="headerlink" title="@PatchMapping"></a>@PatchMapping</h4><blockquote>
+<p>Patch方式是对Put方式的一种补充。put方式是可以更新，但是更新的是整体。patch是对局部更新。</p>
+</blockquote>
+<h3 id="RequestParam"><a href="#RequestParam" class="headerlink" title="@RequestParam"></a>@RequestParam</h3><blockquote>
+<p>映射请求参数到Java方法的参数中</p>
+</blockquote>
+<p><code>@RequestParam(value=”参数名”,required=”true/false”,defaultValue=””)</code></p>
+<ul>
+<li><strong>value</strong>：参数名</li>
+<li><strong>required</strong>：是否包含该参数，默认为true，表示该请求路径中必须包含该参数，如果不包含就报错。</li>
+<li><strong>defaultValue</strong>：默认参数值，如果设置了该值，required=true将失效，自动为false,如果没有传该参数，就使用默认值</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// UserController.java</span></span><br><span class="line"></span><br><span class="line"><span class="meta">@RestController</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">UserController</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@ApiOperation</span>(value = <span class="string">"查询用户信息"</span>, notes = <span class="string">"根据用户名查询用户信息"</span>, httpMethod = <span class="string">"GET"</span>)</span><br><span class="line">    <span class="meta">@GetMapping</span>(<span class="string">"/user"</span>)</span><br><span class="line">    <span class="function"><span class="keyword">public</span> List&lt;User&gt; <span class="title">query</span><span class="params">(@RequestParam(name = <span class="string">"username"</span>,required = <span class="keyword">false</span>,defaultValue = <span class="string">"tom"</span>)</span> String nickname) </span>&#123;</span><br><span class="line">        System.out.println(nickname);</span><br><span class="line">        <span class="keyword">return</span> getUsers();</span><br><span class="line">    &#125;</span><br><span class="line">  </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="RequestBody"><a href="#RequestBody" class="headerlink" title="@RequestBody"></a>@RequestBody</h3><blockquote>
+<p>映射请求参数到Java的实体类中</p>
+</blockquote>
+<p>该注解常用来处理Content-Type: 不是<code>application/x-www-form-urlencoded</code>编码的内容，例如<code>application/json</code>, <code>application/xml</code>等；</p>
+<p>它是通过使用HandlerAdapter 配置的HttpMessageConverters来解析post data body，然后绑定到相应的bean上的。</p>
+<p>因为配置有FormHttpMessageConverter，所以也可以用来处理<code>application/x-www-form-urlencoded</code>的内容，处理完的结果放在一个<code>MultiValueMap&lt;String, String&gt;</code>里，这种情况在某些特殊需求下使用，详情查看FormHttpMessageConverter api;</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@RequestMapping</span>(value = <span class="string">"/something"</span>, method = RequestMethod.PUT)</span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">handle</span><span class="params">(@RequestBody String body, Writer writer)</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">  writer.write(body);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="PathVariable-7"><a href="#PathVariable-7" class="headerlink" title="@PathVariable ^7"></a>@PathVariable <a href="https://docs.spring.io/spring/docs/5.0.0.M1/spring-framework-reference/htmlsingle/#mvc-ann-requestmapping-uri-templates" target="_blank" rel="noopener">^7</a></h3><h3 id="PageableDefault"><a href="#PageableDefault" class="headerlink" title="@PageableDefault"></a>@PageableDefault</h3><blockquote>
+<p>指定分页参数默认值</p>
+</blockquote>
+<ul>
+<li><strong>page</strong>: 第几页，从0开始，默认为第0页</li>
+<li><strong>size</strong>: 每一页的大小，默认为20</li>
+<li><strong>sort</strong>: 排序相关的信息，以property,property(,ASC|DESC)的方式组织，例如sort=firstname&amp;sort=lastname,desc表示在按firstname正序排列基础上按lastname倒序排列。</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// UserController.java</span></span><br><span class="line"></span><br><span class="line"><span class="meta">@RestController</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">UserController</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@ApiOperation</span>(value = <span class="string">"分页查询用户数据"</span>, notes = <span class="string">"分页查询用户数据"</span>, httpMethod = <span class="string">"GET"</span>)</span><br><span class="line">    <span class="meta">@GetMapping</span>(<span class="string">"/user"</span>)</span><br><span class="line">    <span class="meta">@JsonView</span>(User.UserSimpleView<span class="class">.<span class="keyword">class</span>)</span></span><br><span class="line"><span class="class">    <span class="title">public</span> <span class="title">List</span>&lt;<span class="title">User</span>&gt; <span class="title">query</span>(<span class="title">UserQueryCondition</span> <span class="title">condition</span>, @<span class="title">PageableDefault</span>(<span class="title">page</span></span>=<span class="number">1</span>,size = <span class="number">10</span>,sort = <span class="string">"username,asc"</span>) Pageable pageable) &#123;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// TEST：在控制台中打印不出来</span></span><br><span class="line">        System.out.println(pageable.getPageSize());</span><br><span class="line">        System.out.println(pageable.getPageNumber());</span><br><span class="line">        System.out.println(pageable.getSort());</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> getUsers();</span><br><span class="line">    &#125;</span><br><span class="line">  </span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// User.java</span></span><br><span class="line"></span><br><span class="line"><span class="meta">@Data</span></span><br><span class="line"><span class="meta">@NoArgsConstructor</span></span><br><span class="line"><span class="meta">@AllArgsConstructor</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">User</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">UserSimpleView</span></span>&#123;&#125;;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">UserDetailView</span> <span class="keyword">extends</span> <span class="title">UserSimpleView</span></span>&#123;&#125;;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> id;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@MyConstraint</span>(message = <span class="string">"这是一个测试"</span>)</span><br><span class="line">    <span class="meta">@JsonView</span>(UserSimpleView<span class="class">.<span class="keyword">class</span>)</span></span><br><span class="line"><span class="class">    <span class="title">private</span> <span class="title">String</span> <span class="title">username</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@NotBlank</span>(message = <span class="string">"密码不能为空"</span>)</span><br><span class="line">    <span class="meta">@JsonView</span>(UserDetailView<span class="class">.<span class="keyword">class</span>)</span></span><br><span class="line"><span class="class">    <span class="title">private</span> <span class="title">String</span> <span class="title">password</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Past</span>(message = <span class="string">"生日必须是过去的时间"</span>)</span><br><span class="line">    <span class="keyword">private</span> Date birthday;</span><br><span class="line"></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// UserQueryCondition.java</span></span><br><span class="line"></span><br><span class="line"><span class="meta">@Data</span></span><br><span class="line"><span class="meta">@NoArgsConstructor</span></span><br><span class="line"><span class="meta">@AllArgsConstructor</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">UserQueryCondition</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> String username;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> age;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> ageTo;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> String xxx;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="Valid"><a href="#Valid" class="headerlink" title="@Valid"></a>@Valid</h3><h4 id="Hibernate-Validation注解"><a href="#Hibernate-Validation注解" class="headerlink" title="Hibernate Validation注解"></a>Hibernate Validation注解</h4><table>
+<thead>
+<tr>
+<th>注解</th>
+<th style="text-align:left">说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>@NotNull</td>
+<td style="text-align:left">值不能为空</td>
+</tr>
+<tr>
+<td>@Null</td>
+<td style="text-align:left">值必须为空</td>
+</tr>
+<tr>
+<td>@Pattern(regex=)</td>
+<td style="text-align:left">字符串必须匹配正则表达式</td>
+</tr>
+<tr>
+<td>@Size(min=,max=)</td>
+<td style="text-align:left">集合的元素数量必须在min和max之间</td>
+</tr>
+<tr>
+<td>@CreditCardNumber(ignoreNoneDigitCharacters=)</td>
+<td style="text-align:left">字符串必须是信用卡号（美国标准）</td>
+</tr>
+<tr>
+<td>@Email</td>
+<td style="text-align:left">字符串必须是Email地址</td>
+</tr>
+<tr>
+<td>@Length(min=,max=)</td>
+<td style="text-align:left">检查字符串的长度</td>
+</tr>
+<tr>
+<td>@NotBlank</td>
+<td style="text-align:left">字符串必须有字符</td>
+</tr>
+<tr>
+<td>@NotEmpty</td>
+<td style="text-align:left">字符串不能为null，集合内须有元素</td>
+</tr>
+<tr>
+<td>@Range(min=,max=)</td>
+<td style="text-align:left">值数字必须大于等于min，小于等于max</td>
+</tr>
+<tr>
+<td>@SafeHtml</td>
+<td style="text-align:left">字符串是安全的html</td>
+</tr>
+<tr>
+<td>@URL(protocol=,host=,port=,regexp=,flags=)</td>
+<td style="text-align:left">字符串是合法的url</td>
+</tr>
+<tr>
+<td>@AssertFalse</td>
+<td style="text-align:left">值必须是False</td>
+</tr>
+<tr>
+<td>@AssertTrue</td>
+<td style="text-align:left">值必须是True</td>
+</tr>
+<tr>
+<td>@DecimalMax(value=,inclusive=)</td>
+<td style="text-align:left">值必须小于等于（inclusive=true）/小于（inclusive=false）value属性指定的值。可以注释在字符串类型的属性上。</td>
+</tr>
+<tr>
+<td>@DecimalMin(value=,inclusive=)</td>
+<td style="text-align:left">值必须大于等于（inclusive=true）/大于（inclusive=false）value属性指定的值。可以注释在字符串类型的属性上。</td>
+</tr>
+<tr>
+<td>@Digits(integer=,fraction=)</td>
+<td style="text-align:left">数字格式检查。integer指定整数部分额最大长度，fraction指定小数部分的最大长度</td>
+</tr>
+<tr>
+<td>@Future</td>
+<td style="text-align:left">值必须是未来的日期</td>
+</tr>
+<tr>
+<td>@Past</td>
+<td style="text-align:left">值必须是过去的日期</td>
+</tr>
+<tr>
+<td>@Max(value=)</td>
+<td style="text-align:left">值必须小于等于value指定的值。不能注释在字符串类型的属性上。</td>
+</tr>
+<tr>
+<td>@Min(value=)</td>
+<td style="text-align:left">值必须大于等于value指定的值。不能注释在字符串类型的属性上。</td>
+</tr>
+</tbody>
+</table>
+<h4 id="BindingResult"><a href="#BindingResult" class="headerlink" title="BindingResult"></a>BindingResult</h4><p>@Valid 和 BindingResult 是一一对应的，如果有多个@Valid，那么每个@Valid后面跟着的BindingResult就是这个@Valid的验证结果，顺序不能乱。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> Object <span class="title">doSomething</span><span class="params">(@Validated @RequestBody OneDto oneDto, </span></span></span><br><span class="line"><span class="function"><span class="params">                          BindingResult result)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 参数通不过校验也会进入方法执行，校验结果会通过result参数传递进来</span></span><br><span class="line">    <span class="keyword">if</span> (result.hasErrors())&#123;</span><br><span class="line">         <span class="comment">// 没通过校验</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h4 id="Validated和-Valid的区别"><a href="#Validated和-Valid的区别" class="headerlink" title="@Validated和@Valid的区别"></a>@Validated和@Valid的区别</h4><ul>
+<li><strong>@Valid</strong>是使用Hibernate validation的时候使用</li>
+<li><strong>@Validated</strong>是只用Spring Validator校验机制使用</li>
+</ul>
+<blockquote>
+<p>说明：java的JSR303声明了@Valid这类接口，而Hibernate-validator对其进行了实现。@Validation对@Valid进行了二次封装，在使用上并没有区别，但在分组、注解位置、嵌套验证等功能上有所不同，这里主要就这几种情况进行说明。</p>
+</blockquote>
+<h5 id="注解位置"><a href="#注解位置" class="headerlink" title="注解位置"></a>注解位置</h5><ul>
+<li><strong>@Validated</strong>：用在类型、方法和方法参数上。但不能用于成员属性（field），如果@Validated注解在成员属性上，则会报  不适用于field错误</li>
+<li><strong>@Valid</strong>：可以用在方法、构造函数、方法参数和成员属性（field）上</li>
+</ul>
+<h5 id="分组校验"><a href="#分组校验" class="headerlink" title="分组校验"></a>分组校验</h5><ul>
+<li><strong>@Validated</strong>：提供分组功能，可以在参数验证时，根据不同的分组采用不同的验证机制</li>
+<li><strong>@Valid</strong>：没有分组功能</li>
+</ul>
+<h5 id="组序列"><a href="#组序列" class="headerlink" title="组序列"></a>组序列</h5><p>默认情况下 不同级别的约束验证是无序的，但是在一些情况下，顺序验证却是很重要。</p>
+<p>一个组可以定义为其他组的序列，使用它进行验证的时候必须符合该序列规定的顺序。在使用组序列验证的时候，如果序列前边的组验证失败，则后面的组将不再给予验证。</p>
+<h5 id="嵌套校验"><a href="#嵌套校验" class="headerlink" title="嵌套校验"></a>嵌套校验</h5><p>一个待验证的pojo类，其中还包含了待验证的对象，需要在待验证对象上注解@Valid，才能验证待验证对象中的成员属性，这里不能使用@Validated。</p>
+<h2 id="HTTP状态码"><a href="#HTTP状态码" class="headerlink" title="HTTP状态码"></a>HTTP状态码</h2><h3 id="GET"><a href="#GET" class="headerlink" title="GET"></a>GET</h3><blockquote>
+<ul>
+<li>安全且幂等</li>
+<li>获取表示</li>
+<li>变更时获取表示（缓存）</li>
+</ul>
+</blockquote>
+<ul>
+<li>200（OK） - 表示已在响应中发出</li>
+<li>204（无内容） - 资源有空表示</li>
+<li>301（Moved Permanently） - 资源的URI已被更新</li>
+<li>303（See Other） - 其他（如，负载均衡）</li>
+<li>304（not modified）- 资源未更改（缓存）</li>
+<li>400 （bad request）- 指代坏请求（如，参数错误）</li>
+<li>404 （not found）- 资源不存在</li>
+<li>406 （not acceptable）- 服务端不支持所需表示</li>
+<li>500 （internal server error）- 通用错误响应</li>
+<li>503 （Service Unavailable）- 服务端当前无法处理请求</li>
+</ul>
+<h3 id="POST"><a href="#POST" class="headerlink" title="POST"></a>POST</h3><blockquote>
+<ul>
+<li>不安全且不幂等</li>
+<li>使用服务端管理的（自动产生）的实例号创建资源</li>
+<li>创建子资源</li>
+<li>部分更新资源</li>
+<li>如果没有被修改，则不过更新资源（乐观锁）</li>
+</ul>
+</blockquote>
+<ul>
+<li>200（OK）- 如果现有资源已被更改</li>
+<li>201（created）- 如果新资源被创建</li>
+<li>202（accepted）- 已接受处理请求但尚未完成（异步处理）</li>
+<li>301（Moved Permanently）- 资源的URI被更新</li>
+<li>303（See Other）- 其他（如，负载均衡）</li>
+<li>400（bad request）- 指代坏请求</li>
+<li>404 （not found）- 资源不存在</li>
+<li>406 （not acceptable）- 服务端不支持所需表示</li>
+<li>409 （conflict）- 通用冲突</li>
+<li>412 （Precondition Failed）- 前置条件失败（如执行条件更新时的冲突）</li>
+<li>415 （unsupported media type）- 接受到的表示不受支持</li>
+<li>500 （internal server error）- 通用错误响应</li>
+<li>503 （Service Unavailable）- 服务当前无法处理请求</li>
+</ul>
+<h3 id="PUT"><a href="#PUT" class="headerlink" title="PUT"></a>PUT</h3><blockquote>
+<ul>
+<li>不安全但幂等</li>
+<li>用客户端管理的实例号创建一个资源</li>
+<li>通过替换的方式更新资源</li>
+<li>如果未被修改，则更新资源（乐观锁）</li>
+</ul>
+</blockquote>
+<ul>
+<li>200 （OK）- 如果已存在资源被更改</li>
+<li>201 （created）- 如果新资源被创建</li>
+<li>301（Moved Permanently）- 资源的URI已更改</li>
+<li>303 （See Other）- 其他（如，负载均衡）</li>
+<li>400 （bad request）- 指代坏请求</li>
+<li>404 （not found）- 资源不存在</li>
+<li>406 （not acceptable）- 服务端不支持所需表示</li>
+<li>409 （conflict）- 通用冲突</li>
+<li>412 （Precondition Failed）- 前置条件失败（如执行条件更新时的冲突）</li>
+<li>415 （unsupported media type）- 接受到的表示不受支持</li>
+<li>500 （internal server error）- 通用错误响应</li>
+<li>503 （Service Unavailable）- 服务当前无法处理请求</li>
+</ul>
+<h3 id="DELETE"><a href="#DELETE" class="headerlink" title="DELETE"></a>DELETE</h3><blockquote>
+<ul>
+<li>不安全但幂等</li>
+<li>删除资源</li>
+</ul>
+</blockquote>
+<ul>
+<li>200 （OK）- 资源已被删除</li>
+<li>301 （Moved Permanently）- 资源的URI已更改</li>
+<li>303 （See Other）- 其他，如负载均衡</li>
+<li>400 （bad request）- 指代坏请求</li>
+<li>404 （not found）- 资源不存在</li>
+<li>409 （conflict）- 通用冲突</li>
+<li>500 （internal server error）- 通用错误响应</li>
+<li>503 （Service Unavailable）- 服务端当前无法处理请求</li>
+</ul>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><ol>
+<li>Restful是一种用URL描述资源的方式</li>
+<li>使用HTTP方法描述行为，使用HTTP状态码来表示不同的结果</li>
+<li>使用json交互数据</li>
+<li>Restful只是一种风格，并不是强制的标准</li>
+</ol>
+<h2 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h2>
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>Ling Moumou
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://lingmoumou.github.io/p/2020/01/30/73de0aa5/" title="Restful API 简介">https://lingmoumou.github.io/p/2020/01/30/73de0aa5/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/java/" rel="tag"># java</a>
+              <a href="/tags/spring/" rel="tag"># spring</a>
+              <a href="/tags/springboot/" rel="tag"># springboot</a>
+              <a href="/tags/spring-security/" rel="tag"># spring security</a>
+              <a href="/tags/imooc/" rel="tag"># imooc</a>
+              <a href="/tags/Spring-Security开发安全的REST服务/" rel="tag"># Spring Security开发安全的REST服务</a>
+              <a href="/tags/restful/" rel="tag"># restful</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/p/2020/01/27/2103582f/" rel="prev" title="git-help">
+      <i class="fa fa-chevron-left"></i> git-help
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/p/2020/01/30/a2c9f3de/" rel="next" title="Java常用的工具类库">
+      Java常用的工具类库 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Restful-特点"><span class="nav-number">1.</span> <span class="nav-text">Restful 特点</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Restful-常用URL"><span class="nav-number">2.</span> <span class="nav-text">Restful 常用URL</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Spring相关常用注解"><span class="nav-number">3.</span> <span class="nav-text">Spring相关常用注解</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#RestController"><span class="nav-number">3.1.</span> <span class="nav-text">@RestController</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#RequestMapping-及其变体"><span class="nav-number">3.2.</span> <span class="nav-text">@RequestMapping 及其变体</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#GetMapping"><span class="nav-number">3.2.1.</span> <span class="nav-text">@GetMapping</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#PostMapping"><span class="nav-number">3.2.2.</span> <span class="nav-text">@PostMapping</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#PutMapping"><span class="nav-number">3.2.3.</span> <span class="nav-text">@PutMapping</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#DeleteMapping"><span class="nav-number">3.2.4.</span> <span class="nav-text">@DeleteMapping</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#PatchMapping"><span class="nav-number">3.2.5.</span> <span class="nav-text">@PatchMapping</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#RequestParam"><span class="nav-number">3.3.</span> <span class="nav-text">@RequestParam</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#RequestBody"><span class="nav-number">3.4.</span> <span class="nav-text">@RequestBody</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#PathVariable-7"><span class="nav-number">3.5.</span> <span class="nav-text">@PathVariable ^7</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#PageableDefault"><span class="nav-number">3.6.</span> <span class="nav-text">@PageableDefault</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Valid"><span class="nav-number">3.7.</span> <span class="nav-text">@Valid</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Hibernate-Validation注解"><span class="nav-number">3.7.1.</span> <span class="nav-text">Hibernate Validation注解</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#BindingResult"><span class="nav-number">3.7.2.</span> <span class="nav-text">BindingResult</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Validated和-Valid的区别"><span class="nav-number">3.7.3.</span> <span class="nav-text">@Validated和@Valid的区别</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#注解位置"><span class="nav-number">3.7.3.1.</span> <span class="nav-text">注解位置</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#分组校验"><span class="nav-number">3.7.3.2.</span> <span class="nav-text">分组校验</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#组序列"><span class="nav-number">3.7.3.3.</span> <span class="nav-text">组序列</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#嵌套校验"><span class="nav-number">3.7.3.4.</span> <span class="nav-text">嵌套校验</span></a></li></ol></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#HTTP状态码"><span class="nav-number">4.</span> <span class="nav-text">HTTP状态码</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#GET"><span class="nav-number">4.1.</span> <span class="nav-text">GET</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#POST"><span class="nav-number">4.2.</span> <span class="nav-text">POST</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#PUT"><span class="nav-number">4.3.</span> <span class="nav-text">PUT</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#DELETE"><span class="nav-number">4.4.</span> <span class="nav-text">DELETE</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#总结"><span class="nav-number">5.</span> <span class="nav-text">总结</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考文献"><span class="nav-number">6.</span> <span class="nav-text">参考文献</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Ling Moumou</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">48</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">18</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">82</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2018 – 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Ling Moumou</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script data-pjax async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/lozad@1/dist/lozad.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script>
+<script src="/js/schemes/pisces.js"></script>
+<script src="/js/next-boot.js"></script>
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  <script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+    </div>
+</body>
+</html>

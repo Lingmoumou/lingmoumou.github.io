@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 3.9.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"lingmoumou.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":true,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="任务理论部分 逻辑回归与线性回归的联系与区别 模型建立：逻辑回归原理、逻辑回归模型 学习策略：逻辑回归损失函数、推导及优化 算法求解：批量梯度下降 正则化与模型评估指标 逻辑回归的优缺点 样本不均衡问题 sklearn参数详解  练习部分https://github.com/datawhalechina/team-learning/blob/master/初级算法梳理/Task3_logistic">
+<meta name="keywords" content="datawhale,ml,机器学习,machine learning,LR,logistic regression,初级算法梳理">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Day3 逻辑回归">
+<meta property="og:url" content="https://lingmoumou.github.io/p/2020/01/13/4786a2a0/index.html">
+<meta property="og:site_name" content="Lingmoumou&#39;s Blog">
+<meta property="og:description" content="任务理论部分 逻辑回归与线性回归的联系与区别 模型建立：逻辑回归原理、逻辑回归模型 学习策略：逻辑回归损失函数、推导及优化 算法求解：批量梯度下降 正则化与模型评估指标 逻辑回归的优缺点 样本不均衡问题 sklearn参数详解  练习部分https://github.com/datawhalechina/team-learning/blob/master/初级算法梳理/Task3_logistic">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:updated_time" content="2021-01-31T13:53:26.000Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Day3 逻辑回归">
+<meta name="twitter:description" content="任务理论部分 逻辑回归与线性回归的联系与区别 模型建立：逻辑回归原理、逻辑回归模型 学习策略：逻辑回归损失函数、推导及优化 算法求解：批量梯度下降 正则化与模型评估指标 逻辑回归的优缺点 样本不均衡问题 sklearn参数详解  练习部分https://github.com/datawhalechina/team-learning/blob/master/初级算法梳理/Task3_logistic">
+
+<link rel="canonical" href="https://lingmoumou.github.io/p/2020/01/13/4786a2a0/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Day3 逻辑回归 | Lingmoumou's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Lingmoumou's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">きっといつかって愿うまま</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://lingmoumou.github.io/p/2020/01/13/4786a2a0/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Ling Moumou">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Lingmoumou's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Day3 逻辑回归
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-01-13 21:23:56" itemprop="dateCreated datePublished" datetime="2020-01-13T21:23:56+08:00">2020-01-13</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-01-31 21:53:26" itemprop="dateModified" datetime="2021-01-31T21:53:26+08:00">2021-01-31</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Datawhale/" itemprop="url" rel="index"><span itemprop="name">Datawhale</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Datawhale/初级算法梳理/" itemprop="url" rel="index"><span itemprop="name">初级算法梳理</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="任务"><a href="#任务" class="headerlink" title="任务"></a>任务</h2><h3 id="理论部分"><a href="#理论部分" class="headerlink" title="理论部分"></a>理论部分</h3><ul>
+<li>逻辑回归与线性回归的联系与区别</li>
+<li>模型建立：逻辑回归原理、逻辑回归模型</li>
+<li>学习策略：逻辑回归损失函数、推导及优化</li>
+<li>算法求解：批量梯度下降</li>
+<li>正则化与模型评估指标</li>
+<li>逻辑回归的优缺点</li>
+<li>样本不均衡问题</li>
+<li>sklearn参数详解</li>
+</ul>
+<h3 id="练习部分"><a href="#练习部分" class="headerlink" title="练习部分"></a>练习部分</h3><p><a href="https://github.com/datawhalechina/team-learning/blob/master/初级算法梳理/Task3_logistic_regression.ipynb" target="_blank" rel="noopener">https://github.com/datawhalechina/team-learning/blob/master/初级算法梳理/Task3_logistic_regression.ipynb</a></p>
+<ul>
+<li>利用sklearn解决分类问题</li>
+<li>sklearn.linear_model.LogisticRegression</li>
+<li>利用梯度下降法将相同的数据分类，画图和sklearn的结果相比较</li>
+<li>利用牛顿法实现结果，画图和sklearn的结果相比较，并比较牛顿法和梯度下降法迭代收敛的次数</li>
+</ul>
+<a id="more"></a>
+<h2 id="逻辑回归"><a href="#逻辑回归" class="headerlink" title="逻辑回归"></a>逻辑回归</h2><blockquote>
+<p>logistic回归又称logistic回归分析，是一种广义的线性回归分析模型，常用于数据挖掘，疾病自动诊断，经济预测等领域。例如，探讨引发疾病的危险因素，并根据危险因素预测疾病发生的概率等。以胃癌病情分析为例，选择两组人群，一组是胃癌组，一组是非胃癌组，两组人群必定具有不同的体征与生活方式等。因此因变量就为是否胃癌，值为“是”或“否”，自变量就可以包括很多了，如年龄、性别、饮食习惯、幽门螺杆菌感染等。自变量既可以是连续的，也可以是分类的。然后通过logistic回归分析，可以得到自变量的权重，从而可以大致了解到底哪些因素是胃癌的危险因素。同时根据该权值可以根据危险因素预测一个人患癌症的可能性。</p>
+</blockquote>
+<h3 id="逻辑回归与线性回归的联系与区别"><a href="#逻辑回归与线性回归的联系与区别" class="headerlink" title="逻辑回归与线性回归的联系与区别"></a>逻辑回归与线性回归的联系与区别</h3><p>线性回归解决的是连续变量问题，那么在分类任务中可以用线性回归吗？例如判断是良性肿瘤还是恶性肿瘤，判断是垃圾邮件还是正常邮件，等等……</p>
+<p>答案是也可以，但是效果不好，见下图：<br><img data-src="https://lingmoumou-blog.oss-cn-beijing.aliyuncs.com/blog/4786a2a0/20190830143654227.png" alt></p>
+<p>图显示了是否购买玩具和年龄之间的关系，可以用线性回归拟合成一条直线，将购买标注为1，不购买标注为0，拟合后取当0.5值为阈值来划分类别。<br>$$\hat y = \begin{cases}<br>1, f(x)&gt;0.5\<br>0, f(x)&lt;0.5<br>\end{cases}$$<br>可以看到，在途中，年龄的区分点约为19岁。<br>但当数据点不平衡时，很容易影响到阈值，见以下图：<br><img data-src="https://lingmoumou-blog.oss-cn-beijing.aliyuncs.com/blog/4786a2a0/20190830143716479.png" alt></p>
+<p>可以看到，0值样本的年龄段往高年龄端偏移后，真实的阈值依然是19岁左右，但拟合出来的曲线的阈值往后边偏移了。可以想想，负样本越多，年龄大的人越多，偏移越严重。<br>可是这符合实际情况吗？实际情况是60岁的老人和80岁的老人都不会购买玩具，增加几位80岁的老人，并不会影响20岁以下人群购买玩具的概率。但因为拟合曲线原本的值域为$(-\infty \  \infty)$而转换后的值域为$[0,1]$，阈值对变量偏移很敏感。</p>
+<h3 id="逻辑回归的原理"><a href="#逻辑回归的原理" class="headerlink" title="逻辑回归的原理"></a>逻辑回归的原理</h3><p>因此理想的替代函数应当预测分类为0或1的概率，当为1的概率大于0.5时，判断为1，当为1的概率小于0.5时，判断为0。因概率的值域为$[0,1]$，这样的设定比线性回归合理很多。<br>常用的替代函数为Sigmoid函数，即：<br>$$<br>h(z) = \frac{1}{1+e^{-z}}<br>$$<br>其中，$z = \theta^T x$<br>我们可以看到，当z大于0时，函数大于0.5；当函数等于0时，函数等于0.5；函数小于0时，函数小于0.5。如果用函数表示目标分到某一类的概率，我们可以采用以下“单位阶跃函数”来判断数据的类别：<br>$$h(z) = \left{<br>\begin{aligned}<br>0，  z<0 \\ 0.5， z="0" 1，>0<br>\end{aligned}<br>\right.$$<br>若Z大于0，则判断为正例；若小于0，判断为反例；若等于0，可任意判别。由于Sigmoid函数单调且可导，函数在（0，1）之间程Z字型，可以很好的模拟二分类情况，因此很适合我们要解决的问题。</0></p>
+<p>接下来我们来推导逻辑回归函数的优化</p>
+<h3 id="逻辑回归损失函数推导及优化"><a href="#逻辑回归损失函数推导及优化" class="headerlink" title="逻辑回归损失函数推导及优化"></a>逻辑回归损失函数推导及优化</h3><p>$$<br>P(y=1|x;\theta) = h_\theta (x) \<br>P(y=0|x;\theta) = 1-h_\theta (x)<br>$$<br>可以写作一般公式，<br>$$P(y|x;\theta)= h(x)^y (1-h(x))^{(1-y)}$$<br>极大似然函数为，<br>$$<br>L(\theta) = \prod^{m}<em>{i=1}h</em>\theta (x^{(i)})^{y^{(i)}} (1-h_\theta (x^{(i)})^{(1-y^{(i)})}<br>$$<br>对数极大似然函数为，<br>$$l(\theta) = log L(\theta) = \sum^{m}<em>{i=1} y^{(i)}log h</em>\theta (x^{(i)}) + (1-y^{(i)})log (1-h_\theta (x^{(i)}))<br>$$<br>损失函数为,<br>$$<br>J(\theta) = -\frac{1}{m}l(\theta) = -\frac{1}{m}\sum^{m}<em>{i=1} y^{(i)}h</em>\theta (x^{(i)}) + (1-y^{(i)})(1-h_\theta (x^{(i)}))<br>$$<br>损失函数表示了预测值和真实值之间的差异程度，预测值和真实值越接近，则损失函数越小。</p>
+<blockquote>
+<p><strong>思考题</strong>：为什么不直接用和线性回归一样的平方损失函数？</p>
+<blockquote>
+<p><strong>回答</strong>：如果和线性回归一样的平方损失函数，则损失函数的形式为$\sum^m_{i=1}(y^{(i)}-\frac{1}{1+e^{-\theta^T x}})^2$，此为非凸函数，求解复杂，而且很容易求得局部最优解为非全局最优解。</p>
+</blockquote>
+</blockquote>
+<p>我们用梯度下降法求解，</p>
+<p>$$\theta:=\theta-\alpha\Delta_\theta J(\theta) = \theta + \frac{\alpha}{m}\Delta_\theta l(\theta)$$<br>由于$g’<em>\theta(z) = g</em>\theta (z)(1-g_\theta(z))$</p>
+<blockquote>
+<p><strong>小练习</strong>：试证明，当$g(z) = \frac{1}{1+e^{-z}}$ ,$g’(z) = g(z)(1-g(z))$</p>
+</blockquote>
+<blockquote>
+<blockquote>
+<p><strong>证明</strong>：<br>$$\begin{align<em>}<br>g’(z)<br>= \frac{-1}{(1+e^{-z})^2}(-e^{-z}) \<br>= \frac{e^{-z}}{(1+e^{-z})^2} \<br>= \frac{1}{1+e^{-z}} \cdot \frac{e^{-z}}{1+e^{-z}} \<br>= g(z)(1-g(z))<br>\end{align</em>}$$<br>因此可以求得，<br>$$\begin{align<em>}<br>\frac{\partial J(\theta)}{\partial \theta_i}<br>= \frac{1}{m}\sum^m_{i=1} y^{(i)}\frac{1}{h_\theta (x^{(i)})} h_\theta (x^{(i)})(1-h_\theta (x^{(i)}))x^{(i)} + (1-y^{(i)})\frac{1}{1-h_\theta (x^{(i)})}h_\theta (x^{(i)})(h_\theta (x^{(i)})-1)\<br>= \frac{1}{m}\sum^m_{i=1}y^{(i)}(1-h_\theta (x^{(i)}))x^{(i)}+(y^{(i)}-1)h_\theta (x^{(i)})x^{(i)} \<br>= \frac{1}{m}\sum^m_{i=1}(y^{(i)} - h_\theta (x^{(i)}))x^{(i)}<br>\end{align</em>}$$<br>可以看到，形式和线性回归很相似，这是因为他们都属于广义线性模型（GLM，可参考吴恩达-CS229 第四课）。</p>
+</blockquote>
+</blockquote>
+<h4 id="逻辑回归的分布式实现"><a href="#逻辑回归的分布式实现" class="headerlink" title="逻辑回归的分布式实现"></a>逻辑回归的分布式实现</h4><p>由于单机处理能力的限制，在对大规模样本训练时，往往需要将求解过程并行化。我们知道在求解过程中，行和列都存在批向量处理的情况，我们可以按行并行和按列并行。</p>
+<h5 id="按行并行"><a href="#按行并行" class="headerlink" title="按行并行"></a>按行并行</h5><p>看$\frac{\partial J(\theta)}{\partial \theta_i} =\frac{1}{m}\sum^m_{i=1}(y^{(i)} - h_\theta (x^{(i)}))x^{(i)}$，相当于将上个迭代步骤结果，将每个样本进行运算后求和，那么只需将样本拆分到不同机器上运算，最后在求和即可。</p>
+<h5 id="按列并行"><a href="#按列并行" class="headerlink" title="按列并行"></a>按列并行</h5><p>$\frac{\partial J(\theta)}{\partial \theta_i} =\frac{1}{m}\sum^m_{i=1}(y^{(i)} - h_\theta (x^{(i)}))x^{(i)}$是对参数$\theta_i$进行的运算，那么只需将特征分配到不同的机器上，分别计算梯度后，再归并到完整的特征向量进行梯度更新即可。</p>
+<h3 id="正则化与模型评估指标"><a href="#正则化与模型评估指标" class="headerlink" title="正则化与模型评估指标"></a>正则化与模型评估指标</h3><h4 id="正则化"><a href="#正则化" class="headerlink" title="正则化"></a>正则化</h4><p>我们可以在损失函数后面，加上正则化函数，即$\theta$的惩罚项，来抑制过拟合问题。</p>
+<h5 id="L1正则"><a href="#L1正则" class="headerlink" title="L1正则"></a>L1正则</h5><p>$$<br>J(\theta) =\frac{1}{m}\sum^{m}<em>{i=1} y^{(i)}h</em>\theta (x^{(i)}) + (1-y^{(i)})(1-h_\theta (x^{(i)})) + \frac{\lambda}{m<br>}\sum^m_{i=1}|\theta_i|<br>$$<br>$$<br>\Delta_{\theta_i} l(\theta) = \frac{1}{m}\sum^m_{i=1}(y^{(i)} - h_\theta (x^{(i)}))x^{(i)} + \frac{\lambda}{m}sgn(\theta_i)<br>$$<br>梯度下降法的迭代函数变为,<br>$$\theta:=\theta-K’(\theta)-\frac{\lambda}{m}sgn(\theta)$$<br>$K(\theta)$为原来的损失函数，由于最后一项的符号由$\theta$决定，可以看到，当$\theta$大于零时，更新后的$\theta$变小；当$\theta$小于零时，更新后的$\theta$变大。因此，L1正则化调整后的结果会更加稀疏（结果向量中有更多的0值）。（见图示，相当于在等高线上找令菱形最小的点。）</p>
+<h5 id="L2正则"><a href="#L2正则" class="headerlink" title="L2正则"></a>L2正则</h5><p>$$<br>J(\theta) =\frac{1}{m}\sum^{m}<em>{i=1} y^{(i)}h</em>\theta (x^{(i)}) + (1-y^{(i)})(1-h_\theta (x^{(i)})) + \frac{\lambda}{2m}\sum^m_{i=1}\theta_i^2<br>$$<br>$$<br>\Delta_{\theta_i} l(\theta) = \frac{1}{m}\sum^m_{i=1}(y^{(i)} - h_\theta (x^{(i)}))x^{(i)} + \frac{\lambda}{m}\theta_i<br>$$<br>梯度下降法的迭代函数变为,<br>$$\theta:=\theta-K’(\theta)-\frac{2\lambda}{m}\theta$$<br>$K(\theta)$为原来的损失函数，最有一项的$\lambda$决定了对参数的惩罚力度，惩罚力度越大，最后的结果向量的参数普遍较小且分散，避免了个别参数对整个函数起较大的影响。（见图示，相当于在等高线上找令圆形最小的点）</p>
+<h5 id="逻辑回归的评价指标"><a href="#逻辑回归的评价指标" class="headerlink" title="逻辑回归的评价指标"></a>逻辑回归的评价指标</h5><p>由于逻辑回归模型属于分类模型，不能用线性回归的评价指标。 二元分类的评价指标基本都适用于逻辑回归。 观察以下混淆矩阵，<br><img data-src="https://lingmoumou-blog.oss-cn-beijing.aliyuncs.com/blog/4786a2a0/4b1eek0aoz.jpeg" alt></p>
+<p>我们可以用查准率和查全率来评价预测结果：</p>
+<ul>
+<li><strong>查准率</strong> $P =\frac{TP}{TP+FP}$</li>
+<li><strong>查全率</strong> $R =\frac{TP}{TP+FN}$</li>
+</ul>
+<p>我们可以用P-R曲线表示查准率和查全率之间的关系：<br>查准率和查全率经常相互矛盾，一般查准率高时查全率低，查全率高时查准率低。我们经常针对具体的应用场景决定更看重哪一个指标。</p>
+<blockquote>
+<p><strong>小练习</strong>：试举例说明，在什么场景下，更看重查准率；在什么情况下，更看重查全率，并说明原因。<br><img data-src="https://lingmoumou-blog.oss-cn-beijing.aliyuncs.com/blog/4786a2a0/4b1eek0aoz.jpeg" alt></p>
+</blockquote>
+<p>P-R曲线越靠外，则预测效果越好，如果两条P-R曲线相交，则难说孰优孰率，可以计算曲线包住的面积。<br>我们可以用$F_\beta$表达对查准率/查全率的不同偏好，定义为：<br>$$F_\beta = \frac{(1+\beta^2) \cdot P \cdot R}{(\beta^2 \cdot P)+R}$$<br>$\beta$大于1时，查全率有更大影响；$\beta$小于1时，查准率有更大影响；$\beta$等于0时，即标准的F1度量。<br>但是，当正负样本分布发生变化时，P-R曲线会受到较大影响。试想负样本的数量扩大10倍，FP和TN都会成倍增加，会影响到查准率和查全率。这时候我们可以用ROC曲线来评价模型。</p>
+<p>定义：</p>
+<ul>
+<li>$TPR = \frac{TP}{TP+FN}$</li>
+<li>$FPR = \frac{FP}{TN+FP}$</li>
+</ul>
+<p>绘图的过程可以将样本的预测概率排序，将分类阈值从最小向最大移动，则每个阈值会得到一组TPR和FPR的位置点，将所有的点连结，则绘制成ROC曲线，同时，计算曲线下的面积，即AUC值。AUC值越大，则说明预测的效果越好。<br><img data-src="https://lingmoumou-blog.oss-cn-beijing.aliyuncs.com/blog/4786a2a0/11525720-dd2545eaaaa7c2ba.png" alt></p>
+<h5 id="AUC值的计算"><a href="#AUC值的计算" class="headerlink" title="AUC值的计算"></a>AUC值的计算</h5><p><strong>计算方法一</strong>：<br><img data-src="https://lingmoumou-blog.oss-cn-beijing.aliyuncs.com/blog/4786a2a0/roc_plot.gif" alt></p>
+<p>上图很形象地描述了RUC的描绘过程，那么，计算AUC值也很直观了，每一组点的坐标,可以写成$(x_i,y_i)$，那么，<br>$$AUC = \frac{1}{2}\sum^{m-1}<em>{i=1}(x</em>{i+1}-x_i) \cdot(y_i + y_{i+1})$$<br>上式乘以二分之一的原因是，阈值变更时，上图正例和反例单个出现的，但当数据量增加，每个阈值同时存在多个正例和反例时，上升的轨迹可能是斜线，因此要计算梯形面积。</p>
+<p><strong>计算方法二</strong>：</p>
+<p>任意给一个正样本和负样本，如果正样本的预测概率大于负样本，意味着以此正样本的预测概率为阈值，预测是成功的，则增加1分；如果两者相等，则增加0.5分。<br>$$<br>令 AUC_{ij} = \left{<br>\begin{aligned}<br>    1,   if\ pos_score_i &gt; neg_score_j \<br>    0.5,   if\ pos_score_i = neg_score_j \<br>    0,   if\ pos_score_i &lt; neg_score_j<br>\end{aligned}<br>\right.$$<br>单个正样本对所有负样本的得分占全部负样本的比例为：$AUC_i = \frac{1}{m^-}\sum<br>^{m^-}<em>{j=1}AUC</em>{ij}$</p>
+<p>如果一个正样本在ROC曲线上的坐标为$(x,y)$，x即排序在其之前的负样本所占的比例，即假正例率。那么，整条曲线的ROC值即<br>$$<br>AUC = \frac{1}{m^+m^-}AUC_{ij} = \frac{1}{m^+m^-}\sum_{x^+\in D^+}\sum_{x^- \in D^-}(\mathbb{I}(f(x^+)&lt;f(x^-))  +\frac{1}{2}\mathbb{I}(f(x^+)=f(x^-))<br>$$<br>方 法一是将每个预测概率预测正确的比例做积分，方法二是将每个正样本的预测概率大于负样本预测概率的比例做积分。<br>我们可以把方法1理解为，将ROC曲线看作$y = f(x)$，求定积分$\int_0^1f(x)dx$，方法2理解为，将RUC曲线看作是$x = g(y)$，求$\int_0^1g(y)dy$。</p>
+<h3 id="逻辑回归的优缺点"><a href="#逻辑回归的优缺点" class="headerlink" title="逻辑回归的优缺点"></a>逻辑回归的优缺点</h3><ul>
+<li><strong>优点</strong>：从上面介绍已经可以额看到，逻辑回归的思想简洁，可以很好的解决二问题。</li>
+<li><strong>缺点</strong>：观察下图<br><img data-src="https://lingmoumou-blog.oss-cn-beijing.aliyuncs.com/blog/4786a2a0/2019083014370448.png" alt></li>
+</ul>
+<ol>
+<li>因为预测结果呈Z字型（或反Z字型），因此当数据集中在中间区域时，对概率的变化会很敏感，可能使得预测结果缺乏区分度。</li>
+<li>由于逻辑回归依然是线性划分，对于非线性的数据集适应性弱。</li>
+<li>当特征空间很大，性能欠佳。</li>
+<li>只能处理两分类问题。</li>
+</ol>
+<h3 id="样本不均衡问题"><a href="#样本不均衡问题" class="headerlink" title="样本不均衡问题"></a>样本不均衡问题</h3><p>每200封邮件里有1封垃圾邮件，当碰到一封新邮件时，我们只需将其预测为正常邮件，可以达到99.5%的准确率。但是这样的学习器毫无价值，因为他无法判断出任意一封垃圾邮件。<br>我们预测时，实际上是用预测出的概率值与一个阈值进行比较，例如当y &gt; 0.5时，判断为正例。$\frac{y}{1-y}$表示了正例可能性和反例可能性的比值。阈值为0.5时，即$\frac{y}{1-y}&gt;1$时，预测为正例。<br>如果令$m_+$为样本正例数，$m_-$为样本负例数，随机的观测几率为$\frac{m_+}{m_-}$。只要分类器的预测概率高于观测几率，应判定为正例，即<br>$$<br>\frac{y}{1-y}&gt;\frac{m_+}{m_-}，预测为正例<br>$$<br>这时候，需要对预测值进行调整，使得$\frac {y’}{1-y’}=\frac{y}{1-y} \cdot\frac{m_+}{m_-}$，那么，0.5的阈值依然是合理的分类决策。<br>这就是类别不平衡的一个基本策略——“再缩放”。<br>“再缩放”的三类做法：</p>
+<ul>
+<li><strong>欠采样</strong>：去除一些反例使得正反例数目接近。</li>
+<li><strong>过采样</strong>：增加一些正例使得正反例数目接近。</li>
+<li><strong>阈值移动</strong>：基于原始集学习，当在预测是，将决策阈值改为符合样本正负样本比例的值。<br>可以想到，过采样因为增加了数据，时间开销大于欠采样法。但欠采样法由于随机丢弃反例，可能丢失一些重要信息。这时候可以将反例划分成若干个集合分别学习，从全局来看并非丢失重要信息。</li>
+</ul>
+<h3 id="sklearn参数-1"><a href="#sklearn参数-1" class="headerlink" title="sklearn参数 ^1"></a>sklearn参数 <a href="https://blog.csdn.net/qq_38683692/article/details/82533460" target="_blank" rel="noopener">^1</a></h3><table>
+<thead>
+<tr>
+<th style="text-align:left">Logistics Regression参数名称</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">函数调用形式</td>
+<td>LogisticRegression(penalty=’l2’,dual=False,tol=1e-4,C=1.0,fit_intercept=True,intercept_scaling=1,class_weight=None,random_state=None,solver=’liblinear’,max_iter=100,multi_class=’ovr’,verbose=0,warm_start=False, n_jobs=1)</td>
+</tr>
+<tr>
+<td style="text-align:left">penalty</td>
+<td>字符串型，’l1’ or ‘l2’，默认：’l2’；正则化类型。</td>
+</tr>
+<tr>
+<td style="text-align:left">dual</td>
+<td>布尔型，默认：False。当样本数&gt;特征数时，令dual=False；用于liblinear解决器中L2正则化。</td>
+</tr>
+<tr>
+<td style="text-align:left">tol</td>
+<td>浮点型，默认：1e-4；迭代终止判断的误差范围。</td>
+</tr>
+<tr>
+<td style="text-align:left">C</td>
+<td>浮点型，默认：1.0；其值等于正则化强度的倒数，为正的浮点数。数值越小表示正则化越强。</td>
+</tr>
+<tr>
+<td style="text-align:left">fit_intercept</td>
+<td>布尔型，默认：True；指定是否应该向决策函数添加常量(即偏差或截距)。</td>
+</tr>
+<tr>
+<td style="text-align:left">intercept_scaling</td>
+<td>浮点型，默认为1；仅仅当solver是”liblinear”时有用。</td>
+</tr>
+<tr>
+<td style="text-align:left">class_weight</td>
+<td>默认为None；与”{class_label: weight}”形式中的类相关联的权重。如果不给，则所有的类的权重都应该是1。</td>
+</tr>
+<tr>
+<td style="text-align:left">random_state</td>
+<td>整型，默认None；当”solver”==”sag”或”liblinear”时使用。在变换数据时使用的伪随机数生成器的种子。如果是整数, random_state为随机数生成器使用的种子;若为RandomState实例，则random_state为随机数生成器;如果没有，随机数生成器就是’ np.random ‘使用的RandomState实例。</td>
+</tr>
+<tr>
+<td style="text-align:left">solver</td>
+<td>{‘newton-cg’,’lbfgs’,’liblinear’,’sag’,’saga’}，默认: ‘liblinear’；用于优化问题的算法。<br>对于小数据集来说，”liblinear”是个不错的选择，而”sag”和’saga’对于大型数据集会更快。<br>对于多类问题，只有’newton-cg’， ‘sag’， ‘saga’和’lbfgs’可以处理多项损失;”liblinear”仅限于”one-versus-rest”分类。</td>
+</tr>
+<tr>
+<td style="text-align:left">max_iter</td>
+<td>最大迭代次数，整型，默认是100；</td>
+</tr>
+<tr>
+<td style="text-align:left">multi_class</td>
+<td>字符串型，{ovr’， ‘multinomial’}，默认:’ovr’；如果选择的选项是”ovr”，那么一个二进制问题适合于每个标签，否则损失最小化就是整个概率分布的多项式损失。对liblinear solver无效。</td>
+</tr>
+<tr>
+<td style="text-align:left">verbose</td>
+<td>整型，默认是0；对于liblinear和lbfgs solver，verbose可以设为任意正数。</td>
+</tr>
+<tr>
+<td style="text-align:left">warm_start</td>
+<td>布尔型，默认为False；当设置为True时，重用前一个调用的解决方案以适合初始化。否则，只擦除前一个解决方案。对liblinear解码器无效。</td>
+</tr>
+<tr>
+<td style="text-align:left">n_jobs</td>
+<td>整型，默认是1；如果multi_class=’ovr’ ，则为在类上并行时使用的CPU核数。无论是否指定了multi_class，当将’ solver ‘ ‘设置为’liblinear’时，将忽略此参数。如果给定值为-1，则使用所有核。</td>
+</tr>
+</tbody>
+</table>
+<h2 id="代码"><a href="#代码" class="headerlink" title="代码"></a>代码</h2><p>1.先尝试调用sklearn的线性回归模型训练数据，尝试以下代码，画图查看分类的结果<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line"><span class="keyword">import</span> pandas <span class="keyword">as</span> pd</span><br><span class="line"><span class="keyword">import</span> matplotlib.pyplot <span class="keyword">as</span> plt</span><br><span class="line"><span class="keyword">from</span> __future__ <span class="keyword">import</span> print_function</span><br><span class="line"><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line"><span class="keyword">from</span> sklearn.linear_model <span class="keyword">import</span> LogisticRegression</span><br><span class="line"></span><br><span class="line">df_X = pd.read_csv(<span class="string">'./logistic_x.txt'</span>, sep=<span class="string">'\ +'</span>,header=<span class="literal">None</span>, engine=<span class="string">'python'</span>) <span class="comment">#读取X值</span></span><br><span class="line">ys = pd.read_csv(<span class="string">'./logistic_y.txt'</span>, sep=<span class="string">'\ +'</span>,header=<span class="literal">None</span>, engine=<span class="string">'python'</span>) <span class="comment">#读取y值</span></span><br><span class="line">ys = ys.astype(int)</span><br><span class="line">df_X[<span class="string">'label'</span>] = ys[<span class="number">0</span>].values <span class="comment">#将X按照y值的结果一一打标签</span></span><br><span class="line"></span><br><span class="line">ax = plt.axes()</span><br><span class="line"><span class="comment">#在二维图中描绘X点所处位置，直观查看数据点的分布情况</span></span><br><span class="line">df_X.query(<span class="string">'label == 0'</span>).plot.scatter(x=<span class="number">0</span>, y=<span class="number">1</span>, ax=ax, color=<span class="string">'blue'</span>)</span><br><span class="line">df_X.query(<span class="string">'label == 1'</span>).plot.scatter(x=<span class="number">0</span>, y=<span class="number">1</span>, ax=ax, color=<span class="string">'red'</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment">#提取用于学习的数据</span></span><br><span class="line">Xs = df_X[[<span class="number">0</span>, <span class="number">1</span>]].values</span><br><span class="line">Xs = np.hstack([np.ones((Xs.shape[<span class="number">0</span>], <span class="number">1</span>)), Xs]) </span><br><span class="line">ys = df_X[<span class="string">'label'</span>].values</span><br><span class="line"></span><br><span class="line">lr = LogisticRegression(fit_intercept=<span class="literal">False</span>) <span class="comment">#因为前面已经将截距项的值合并到变量中，此处参数设置不需要截距项</span></span><br><span class="line">lr.fit(Xs, ys) <span class="comment">#拟合</span></span><br><span class="line">score = lr.score(Xs, ys) <span class="comment">#结果评价</span></span><br><span class="line">print(<span class="string">"Coefficient: %s"</span> % lr.coef_) <span class="comment"># Coefficient: [[-1.70090714  0.55446484  1.07222372]]</span></span><br><span class="line">print(<span class="string">"Score: %s"</span> % score) <span class="comment"># Score: 0.898989898989899</span></span><br><span class="line"></span><br><span class="line">ax = plt.axes()</span><br><span class="line"></span><br><span class="line">df_X.query(<span class="string">'label == 0'</span>).plot.scatter(x=<span class="number">0</span>, y=<span class="number">1</span>, ax=ax, color=<span class="string">'blue'</span>)</span><br><span class="line">df_X.query(<span class="string">'label == 1'</span>).plot.scatter(x=<span class="number">0</span>, y=<span class="number">1</span>, ax=ax, color=<span class="string">'red'</span>)</span><br><span class="line"></span><br><span class="line">_xs = np.array([np.min(Xs[:,<span class="number">1</span>]), np.max(Xs[:,<span class="number">1</span>])])</span><br><span class="line"></span><br><span class="line"><span class="comment">#将数据以二维图形式描点，并用学习得出的参数结果作为阈值，划分数据区域</span></span><br><span class="line">_ys = (lr.coef_[<span class="number">0</span>][<span class="number">0</span>] + lr.coef_[<span class="number">0</span>][<span class="number">1</span>] * _xs) / (- lr.coef_[<span class="number">0</span>][<span class="number">2</span>])</span><br><span class="line">plt.plot(_xs, _ys, lw=<span class="number">1</span>)</span><br><span class="line">plt.show()</span><br></pre></td></tr></table></figure></p>
+<p><img data-src="https://lingmoumou-blog.oss-cn-beijing.aliyuncs.com/blog/4786a2a0/QQ20200114124640.png" alt></p>
+<p>2.用梯度下降法将相同的数据分类，画图和sklearn的结果相比较<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">LGR_GD</span><span class="params">()</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self)</span>:</span></span><br><span class="line">        self.w = <span class="literal">None</span> </span><br><span class="line">        self.n_iters = <span class="literal">None</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">fit</span><span class="params">(self,X,y,alpha=<span class="number">0.03</span>,loss = <span class="number">1e-10</span>)</span>:</span> <span class="comment"># 设定步长为0.002，判断是否收敛的条件为1e-10</span></span><br><span class="line">        y = y.reshape(<span class="number">-1</span>,<span class="number">1</span>) <span class="comment">#重塑y值的维度以便矩阵运算</span></span><br><span class="line">        [m,d] = np.shape(X) <span class="comment">#自变量的维度</span></span><br><span class="line">        self.w = np.zeros((<span class="number">1</span>,d)) <span class="comment">#将参数的初始值定为0</span></span><br><span class="line">        tol = <span class="number">1e5</span></span><br><span class="line">        self.n_iters = <span class="number">0</span></span><br><span class="line">        </span><br><span class="line">        <span class="keyword">while</span> tol &gt; loss: <span class="comment">#设置收敛条件</span></span><br><span class="line">            zs = X.dot(self.w.T) </span><br><span class="line">            h_f = <span class="number">1</span> / (<span class="number">1</span> + np.exp(-zs)) </span><br><span class="line">            theta = self.w + alpha *np.mean(X*(y - h_f),axis=<span class="number">0</span>) <span class="comment">#计算迭代的参数值</span></span><br><span class="line">            tol = np.sum(np.abs(theta - self.w))</span><br><span class="line">            self.w = theta <span class="comment">#更新参数值</span></span><br><span class="line">            self.n_iters += <span class="number">1</span> <span class="comment">#更新迭代次数</span></span><br><span class="line">            </span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">predict</span><span class="params">(self, X)</span>:</span></span><br><span class="line">        <span class="comment"># 用已经拟合的参数值预测新自变量</span></span><br><span class="line">        y_pred = X.dot(self.w)</span><br><span class="line">        <span class="keyword">return</span> y_pred  </span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">"__main__"</span>:</span><br><span class="line">    lr_gd = LGR_GD()</span><br><span class="line">    lr_gd.fit(Xs,ys)</span><br><span class="line"></span><br><span class="line">    ax = plt.axes()</span><br><span class="line"></span><br><span class="line">    df_X.query(<span class="string">'label == 0'</span>).plot.scatter(x=<span class="number">0</span>, y=<span class="number">1</span>, ax=ax, color=<span class="string">'blue'</span>)</span><br><span class="line">    df_X.query(<span class="string">'label == 1'</span>).plot.scatter(x=<span class="number">0</span>, y=<span class="number">1</span>, ax=ax, color=<span class="string">'red'</span>)</span><br><span class="line"></span><br><span class="line">    _xs = np.array([np.min(Xs[:,<span class="number">1</span>]), np.max(Xs[:,<span class="number">1</span>])])</span><br><span class="line">    _ys = (lr_gd.w[<span class="number">0</span>][<span class="number">0</span>] + lr_gd.w[<span class="number">0</span>][<span class="number">1</span>] * _xs) / (- lr_gd.w[<span class="number">0</span>][<span class="number">2</span>])</span><br><span class="line">    plt.plot(_xs, _ys, lw=<span class="number">1</span>)</span><br><span class="line">    plt.show()</span><br></pre></td></tr></table></figure></p>
+<p><img data-src="https://lingmoumou-blog.oss-cn-beijing.aliyuncs.com/blog/4786a2a0/QQ20200114124757.png" alt></p>
+<p>3.用牛顿法实现结果，画图和sklearn的结果相比较，并比较牛顿法和梯度下降法迭代收敛的次数<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">LGR_NT</span><span class="params">()</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self)</span>:</span></span><br><span class="line">        self.w = <span class="literal">None</span></span><br><span class="line">        self.n_iters = <span class="literal">None</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">fit</span><span class="params">(self,X,y,loss = <span class="number">1e-10</span>)</span>:</span> <span class="comment"># 判断是否收敛的条件为1e-10</span></span><br><span class="line">        y = y.reshape(<span class="number">-1</span>,<span class="number">1</span>) <span class="comment">#重塑y值的维度以便矩阵运算</span></span><br><span class="line">        [m,d] = np.shape(X) <span class="comment">#自变量的维度</span></span><br><span class="line">        self.w = np.zeros((<span class="number">1</span>,d)) <span class="comment">#将参数的初始值定为0</span></span><br><span class="line">        tol = <span class="number">1e5</span></span><br><span class="line">        n_iters =<span class="number">0</span></span><br><span class="line">        Hessian = np.zeros((d,d))</span><br><span class="line">        </span><br><span class="line">        <span class="keyword">while</span> tol &gt; loss:</span><br><span class="line">            zs = X.dot(self.w.T)</span><br><span class="line">            h_f = <span class="number">1</span> / (<span class="number">1</span> + np.exp(-zs))</span><br><span class="line">            grad = np.mean(X*(y - h_f),axis=<span class="number">0</span>)</span><br><span class="line">            <span class="keyword">for</span> i <span class="keyword">in</span> range(d):</span><br><span class="line">                <span class="keyword">for</span> j <span class="keyword">in</span> range(d):</span><br><span class="line">                    <span class="keyword">if</span> j&gt;=i:</span><br><span class="line">                        Hessian[i][j] = np.mean(h_f*(h_f<span class="number">-1</span>)*X[:,i]*X[:,j]) <span class="comment">#更新海森矩阵中的值</span></span><br><span class="line">                    <span class="keyword">else</span>:</span><br><span class="line">                        Hessian[i][j] = Hessian[j][i] <span class="comment">#按海森矩阵的性质，对称点可直接得出结果</span></span><br><span class="line">            theta = self.w - np.linalg.inv(Hessian).dot(grad)</span><br><span class="line">            tol = np.sum(np.abs(theta - self.w))</span><br><span class="line">            self.w = theta</span><br><span class="line">            n_iters += <span class="number">1</span></span><br><span class="line">            </span><br><span class="line">        self.w = theta</span><br><span class="line">        self.n_iters = n_iters</span><br><span class="line">        </span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">predict</span><span class="params">(self, X)</span>:</span></span><br><span class="line">        <span class="comment"># 用已经拟合的参数值预测新自变量</span></span><br><span class="line">        y_pred = X.dot(self.w)</span><br><span class="line">        <span class="keyword">return</span> y_pred  </span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">"__main__"</span>:</span><br><span class="line">    lgr_nt = LGR_NT()</span><br><span class="line">    lgr_nt.fit(Xs,ys)</span><br></pre></td></tr></table></figure></p>
+<p>4.比较梯度下降法和牛顿法收敛速度<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">print(<span class="string">"梯度下降法结果参数：%s;梯度下降法迭代次数：%s"</span> %(lgr_gd.w,lgr_gd.n_iters)) <span class="comment"># 梯队下降法结果参数：[[-2.62051144  0.7603715   1.17194673]]; 梯度下降法迭代次数: 32590</span></span><br><span class="line"></span><br><span class="line">print(<span class="string">"牛顿法结果参数：%s;牛顿法迭代次数：%s"</span> %(lgr_nt.w,lgr_nt.n_iters)) <span class="comment"># 牛顿法结果参数：[[-2.6205116   0.76037154  1.17194674]]; 牛顿法迭代次数: 47</span></span><br></pre></td></tr></table></figure></p>
+<h2 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h2>
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>Ling Moumou
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://lingmoumou.github.io/p/2020/01/13/4786a2a0/" title="Day3 逻辑回归">https://lingmoumou.github.io/p/2020/01/13/4786a2a0/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/datawhale/" rel="tag"># datawhale</a>
+              <a href="/tags/ml/" rel="tag"># ml</a>
+              <a href="/tags/机器学习/" rel="tag"># 机器学习</a>
+              <a href="/tags/machine-learning/" rel="tag"># machine learning</a>
+              <a href="/tags/LR/" rel="tag"># LR</a>
+              <a href="/tags/logistic-regression/" rel="tag"># logistic regression</a>
+              <a href="/tags/初级算法梳理/" rel="tag"># 初级算法梳理</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/p/2020/01/11/b49a15ed/" rel="prev" title="Day2 线性回归">
+      <i class="fa fa-chevron-left"></i> Day2 线性回归
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/p/2020/01/15/5f13e255/" rel="next" title="Day4 决策树">
+      Day4 决策树 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#任务"><span class="nav-number">1.</span> <span class="nav-text">任务</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#理论部分"><span class="nav-number">1.1.</span> <span class="nav-text">理论部分</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#练习部分"><span class="nav-number">1.2.</span> <span class="nav-text">练习部分</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#逻辑回归"><span class="nav-number">2.</span> <span class="nav-text">逻辑回归</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#逻辑回归与线性回归的联系与区别"><span class="nav-number">2.1.</span> <span class="nav-text">逻辑回归与线性回归的联系与区别</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#逻辑回归的原理"><span class="nav-number">2.2.</span> <span class="nav-text">逻辑回归的原理</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#逻辑回归损失函数推导及优化"><span class="nav-number">2.3.</span> <span class="nav-text">逻辑回归损失函数推导及优化</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#逻辑回归的分布式实现"><span class="nav-number">2.3.1.</span> <span class="nav-text">逻辑回归的分布式实现</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#按行并行"><span class="nav-number">2.3.1.1.</span> <span class="nav-text">按行并行</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#按列并行"><span class="nav-number">2.3.1.2.</span> <span class="nav-text">按列并行</span></a></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#正则化与模型评估指标"><span class="nav-number">2.4.</span> <span class="nav-text">正则化与模型评估指标</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#正则化"><span class="nav-number">2.4.1.</span> <span class="nav-text">正则化</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#L1正则"><span class="nav-number">2.4.1.1.</span> <span class="nav-text">L1正则</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#L2正则"><span class="nav-number">2.4.1.2.</span> <span class="nav-text">L2正则</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#逻辑回归的评价指标"><span class="nav-number">2.4.1.3.</span> <span class="nav-text">逻辑回归的评价指标</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#AUC值的计算"><span class="nav-number">2.4.1.4.</span> <span class="nav-text">AUC值的计算</span></a></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#逻辑回归的优缺点"><span class="nav-number">2.5.</span> <span class="nav-text">逻辑回归的优缺点</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#样本不均衡问题"><span class="nav-number">2.6.</span> <span class="nav-text">样本不均衡问题</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#sklearn参数-1"><span class="nav-number">2.7.</span> <span class="nav-text">sklearn参数 ^1</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#代码"><span class="nav-number">3.</span> <span class="nav-text">代码</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考文献"><span class="nav-number">4.</span> <span class="nav-text">参考文献</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Ling Moumou</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">48</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">18</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">82</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2018 – 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Ling Moumou</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script data-pjax async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/lozad@1/dist/lozad.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script>
+<script src="/js/schemes/pisces.js"></script>
+<script src="/js/next-boot.js"></script>
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  <script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+    <div id="pjax">
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+          load: ['[tex]/mhchem'],
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+          packages: {'[+]': ['mhchem']},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = 'true';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+    </div>
+</body>
+</html>

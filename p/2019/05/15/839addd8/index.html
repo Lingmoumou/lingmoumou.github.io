@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 3.9.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"lingmoumou.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":true,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="斗智斗勇，不同时间不同地点的页面内容不同，反爬需要解析的内容也不同。大众点评中商铺列表的最大页数是50页，所以根据分类进行搜索。爬取的时候不需要登录。这次使用的是vscode+anconda+mysql+redis，前期试着用scrapy不通过模拟网页去爬取，需要看运气什么时候能正常获取到页面，这个方法等回头再试试。后来就用request+selenium模拟网页进行爬取，虽然慢，但是不会跳出验证">
+<meta name="keywords" content="python,爬虫,selenium">
+<meta property="og:type" content="article">
+<meta property="og:title" content="爬大众点评的商铺列表">
+<meta property="og:url" content="https://lingmoumou.github.io/p/2019/05/15/839addd8/index.html">
+<meta property="og:site_name" content="Lingmoumou&#39;s Blog">
+<meta property="og:description" content="斗智斗勇，不同时间不同地点的页面内容不同，反爬需要解析的内容也不同。大众点评中商铺列表的最大页数是50页，所以根据分类进行搜索。爬取的时候不需要登录。这次使用的是vscode+anconda+mysql+redis，前期试着用scrapy不通过模拟网页去爬取，需要看运气什么时候能正常获取到页面，这个方法等回头再试试。后来就用request+selenium模拟网页进行爬取，虽然慢，但是不会跳出验证">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:updated_time" content="2021-01-31T13:53:26.000Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="爬大众点评的商铺列表">
+<meta name="twitter:description" content="斗智斗勇，不同时间不同地点的页面内容不同，反爬需要解析的内容也不同。大众点评中商铺列表的最大页数是50页，所以根据分类进行搜索。爬取的时候不需要登录。这次使用的是vscode+anconda+mysql+redis，前期试着用scrapy不通过模拟网页去爬取，需要看运气什么时候能正常获取到页面，这个方法等回头再试试。后来就用request+selenium模拟网页进行爬取，虽然慢，但是不会跳出验证">
+
+<link rel="canonical" href="https://lingmoumou.github.io/p/2019/05/15/839addd8/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>爬大众点评的商铺列表 | Lingmoumou's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Lingmoumou's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">きっといつかって愿うまま</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://lingmoumou.github.io/p/2019/05/15/839addd8/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Ling Moumou">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Lingmoumou's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          爬大众点评的商铺列表
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2019-05-15 20:33:01" itemprop="dateCreated datePublished" datetime="2019-05-15T20:33:01+08:00">2019-05-15</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-01-31 21:53:26" itemprop="dateModified" datetime="2021-01-31T21:53:26+08:00">2021-01-31</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Python/" itemprop="url" rel="index"><span itemprop="name">Python</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>斗智斗勇，不同时间不同地点的页面内容不同，反爬需要解析的内容也不同。大众点评中商铺列表的最大页数是50页，所以根据分类进行搜索。爬取的时候不需要登录。这次使用的是vscode+anconda+mysql+redis，前期试着用scrapy不通过模拟网页去爬取，需要看运气什么时候能正常获取到页面，这个方法等回头再试试。后来就用request+selenium模拟网页进行爬取，虽然慢，但是不会跳出验证码页面，还是能够接受的。<br><a id="more"></a></p>
+<h1 id="前期准备"><a href="#前期准备" class="headerlink" title="前期准备"></a>前期准备</h1><p>访问大众点评的页面时，若没有user-agent与cookie会自动跳转至美团的验证页面，让用户输入验证码。因此访问页面时，需要带着user-agent，先进入首页获取cookie，再跳转至其他页面中。</p>
+<h2 id="User-Agent"><a href="#User-Agent" class="headerlink" title="User-Agent"></a>User-Agent</h2><p>可以获取浏览器中的user-agent，也可以百度出user-agent的列表，自己轮换着使用。在scrapy框架下，可以使用scrapy-redis中新建一个user-agent的文件，随机读取。<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">headers = &#123;</span><br><span class="line">    <span class="string">"User-Agent"</span>: <span class="string">"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.99 Safari/537.36"</span>,</span><br><span class="line">&#125;</span><br><span class="line">res = current_session.get(<span class="string">"http://www.dianping.com/zhengzhou/ch10/g112r2038"</span>, headers=headers)</span><br></pre></td></tr></table></figure></p>
+<h2 id="cookie"><a href="#cookie" class="headerlink" title="cookie"></a>cookie</h2><p>使用request库时请求链接，可以从selenium打开的浏览器中获取cookie，也可以直接用request请求主页，然后记录cookie传递给下一个request。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">current_session = requests.session()</span><br><span class="line"></span><br><span class="line">browser = webdriver.Chrome()</span><br><span class="line">browser.get(<span class="string">"http://www.dianping.com/zhengzhou"</span>)</span><br><span class="line">cookie = browser.get_cookies() <span class="comment">#获取浏览器cookies</span></span><br><span class="line">c = requests.cookies.RequestsCookieJar()</span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> cookie: <span class="comment">#添加cookie到CookieJar</span></span><br><span class="line">    c.set(i[<span class="string">"name"</span>], i[<span class="string">"value"</span>])</span><br><span class="line"></span><br><span class="line">current_session.cookies.update(c) <span class="comment">#更新session里的cookie</span></span><br></pre></td></tr></table></figure>
+<h2 id="延时"><a href="#延时" class="headerlink" title="延时"></a>延时</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">time.sleep(<span class="number">1</span>)</span><br></pre></td></tr></table></figure>
+<h1 id="顺藤摸瓜"><a href="#顺藤摸瓜" class="headerlink" title="顺藤摸瓜"></a>顺藤摸瓜</h1><p>解析页面的时候发现使用图片代替文字和使用文字字体两种进行反爬。使用图片代替文字的解决思路主要是通过css找到文字出现在svg图片中的位置(x,y)。字体的话，就只能依靠辅助方式来把文字识别出来了。</p>
+<h2 id="图片代替文字"><a href="#图片代替文字" class="headerlink" title="图片代替文字"></a>图片代替文字</h2><h3 id="数字反爬"><a href="#数字反爬" class="headerlink" title="数字反爬"></a>数字反爬</h3><p><img data-src="https://lingmoumou-blog.oss-cn-beijing.aliyuncs.com/blog/839addd8/659d3d1eae514e9019021deea4d88393.png?x-oss-process=style/blog" alt="商铺列表1"><br>chrome里按F12，在调试页面可以看到css中引用了背景图片，先找到这个css文件和svg文件。<br>css中记录的相对位置：<br><img data-src="https://lingmoumou-blog.oss-cn-beijing.aliyuncs.com/blog/839addd8/bc6231b5b69c957277d1b945a8cec58e.png?x-oss-process=style/blog" alt="css文件"></p>
+<p>再看看svg的源码如下：<br><img data-src="https://lingmoumou-blog.oss-cn-beijing.aliyuncs.com/blog/839addd8/abf9640395f4145c477b7ca6317594b7.png?x-oss-process=style/blog" alt="svg文件1"></p>
+<p>现将css中这个svg相关的样式都提出来，形成各字典(样式名称,x,y)，解析svg文件，将text标签中的y值和文字提取出来。由于svg中使用的字的大小都是12px，所以先确定css中的样式在svg的哪一行，再确定是第几个就行了。<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">svg_num_dict</span><span class="params">(css_list,svg_html)</span>:</span></span><br><span class="line">    <span class="comment"># css中的样式进行格式转换</span></span><br><span class="line">    css_list = [[i[<span class="number">0</span>], abs(float(i[<span class="number">1</span>])), abs(float(i[<span class="number">2</span>]))] <span class="keyword">for</span> i <span class="keyword">in</span> css_list ]</span><br><span class="line">    </span><br><span class="line">    digits_list = re.findall(<span class="string">r'&gt;(\d+)&lt;'</span>, svg_html) <span class="comment"># 解析svg中的数字</span></span><br><span class="line">    ys=re.findall(<span class="string">r'y="(\d+)"&gt;'</span>,svg_html) <span class="comment"># 解析svg中的y值</span></span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> css_list:</span><br><span class="line">        <span class="keyword">for</span> j <span class="keyword">in</span> range(len(ys)):</span><br><span class="line">            <span class="keyword">if</span> i[<span class="number">2</span>]&lt;= int(ys[j]):</span><br><span class="line">                other_dic[i[<span class="number">0</span>]]=digits_list[j][int(i[<span class="number">1</span>])//<span class="number">12</span>]  <span class="comment"># 存入other_dic全局字典中</span></span><br><span class="line">                <span class="comment"># redis_con.set(i[0], digits_list[j][int(i[1])//12])  # 存入redis中</span></span><br><span class="line">            <span class="keyword">break</span></span><br></pre></td></tr></table></figure></p>
+<h3 id="文字反爬"><a href="#文字反爬" class="headerlink" title="文字反爬"></a>文字反爬</h3><p>目前在大众点评中见到的是两种，在页面中体现的方式都一样，用svgmtsi包裹着，用class中的前缀来区分是使用哪个svg，css中样式提取与形成字典的方式与数字的差不多。主要区别在于svg的解析方式不太一样。一种svg中使用的标签是text，另一种使用的是path和textPath。<br><img data-src="https://lingmoumou-blog.oss-cn-beijing.aliyuncs.com/blog/839addd8/c0c72e3d881de5e78ee9282714f6d0e7.png?x-oss-process=style/blog" alt="商铺列表2"></p>
+<h4 id="text标签"><a href="#text标签" class="headerlink" title="text标签"></a>text标签</h4><p><img data-src="https://lingmoumou-blog.oss-cn-beijing.aliyuncs.com/blog/839addd8/be03d96c163c80ecd9f8b622d5e06b51.png?x-oss-process=style/blog" alt="svg文件2"></p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">svg_font_dict</span><span class="params">(css_list,svg_html)</span>:</span></span><br><span class="line">    <span class="comment"># css中的样式进行格式转换</span></span><br><span class="line">    css_list = [[i[<span class="number">0</span>], abs(float(i[<span class="number">1</span>])), abs(float(i[<span class="number">2</span>]))] <span class="keyword">for</span> i <span class="keyword">in</span> css_list ]</span><br><span class="line">    </span><br><span class="line">    digits_list = re.findall(<span class="string">r'&lt;text x="\d+" y="\d+"&gt;(.*?)&lt;'</span>, svg_html)</span><br><span class="line">    ys=re.findall(<span class="string">r'y="(\d+)"&gt;'</span>,svg_html)</span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> css_list:</span><br><span class="line">        <span class="keyword">for</span> j <span class="keyword">in</span> range(len(ys)):</span><br><span class="line">            <span class="keyword">if</span> i[<span class="number">2</span>]&lt;= int(ys[j]):</span><br><span class="line">                other_dic[i[<span class="number">0</span>]]=digits_list[j][int(i[<span class="number">1</span>])//<span class="number">12</span>]  <span class="comment"># 存入other_dic全局字典中</span></span><br><span class="line">                <span class="comment"># redis_con.set(i[0], digits_list[j][int(i[1])//12]) # 存入redis中</span></span><br><span class="line">            <span class="keyword">break</span></span><br></pre></td></tr></table></figure>
+<h4 id="textPath标签"><a href="#textPath标签" class="headerlink" title="textPath标签"></a>textPath标签</h4><p>通过path知道x与y的值<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">svg_dict</span><span class="params">(css_list,svg_html)</span>:</span></span><br><span class="line">    <span class="comment"># css中的样式进行格式转换</span></span><br><span class="line">    css_list = [[i[<span class="number">0</span>], abs(float(i[<span class="number">1</span>])), abs(float(i[<span class="number">2</span>]))] <span class="keyword">for</span> i <span class="keyword">in</span> css_list ]</span><br><span class="line">    </span><br><span class="line">    <span class="comment"># 解析textPath标签</span></span><br><span class="line">    svg_text_r = <span class="string">r'&lt;textPath xlink:href="(.*?)" textLength="(.*?)"&gt;(.*?)&lt;/textPath&gt;'</span></span><br><span class="line">    svg_text_re = re.findall(svg_text_r, svg_html)</span><br><span class="line">    </span><br><span class="line">    dict_avg = &#123;&#125;</span><br><span class="line">    <span class="keyword">for</span> data <span class="keyword">in</span> svg_text_re:</span><br><span class="line">        dict_avg[int(data[<span class="number">0</span>].replace(<span class="string">"#"</span>, <span class="string">""</span>))<span class="number">-1</span>] = list(data[<span class="number">2</span>])</span><br><span class="line">    </span><br><span class="line">    <span class="comment"># 解析path标签</span></span><br><span class="line">    svg_y_r = <span class="string">r'&lt;path id="(.*?)" d="(.*?) (.*?) (.*?)"/&gt;'</span></span><br><span class="line">    svg_y_re = re.findall(svg_y_r, svg_html)</span><br><span class="line">    list_y = []</span><br><span class="line">    <span class="keyword">for</span> data <span class="keyword">in</span> svg_y_re:</span><br><span class="line">        list_y.append(data[<span class="number">2</span>])</span><br><span class="line">        </span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> css_list:</span><br><span class="line">        <span class="keyword">for</span> j <span class="keyword">in</span> range(len(list_y)):</span><br><span class="line">            <span class="keyword">if</span> i[<span class="number">2</span>]&lt;= int(list_y[j]):</span><br><span class="line">                other_dic[i[<span class="number">0</span>]]=dict_avg[j][int(i[<span class="number">1</span>])//<span class="number">12</span>]  <span class="comment"># 存入other_dic全局字典中</span></span><br><span class="line">                <span class="comment"># redis_con.set(i[0], dict_avg[j][int(i[1])//12]) # 存入redis中</span></span><br><span class="line">            <span class="keyword">break</span></span><br></pre></td></tr></table></figure></p>
+<h2 id="字体代替文字"><a href="#字体代替文字" class="headerlink" title="字体代替文字"></a>字体代替文字</h2><h3 id="字体反爬"><a href="#字体反爬" class="headerlink" title="字体反爬"></a>字体反爬</h3><p><img data-src="https://lingmoumou-blog.oss-cn-beijing.aliyuncs.com/blog/839addd8/dbab07735d82589f5fd640ee9ccc51e3.png?x-oss-process=style/blog" alt="商铺列表3"><br>查看源代码如下：<br><figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">span</span> <span class="attr">class</span>=<span class="string">"addr"</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">svgmtsi</span> <span class="attr">class</span>=<span class="string">"address"</span>&gt;</span><span class="symbol">&amp;#xe457;</span><span class="tag">&lt;/<span class="name">svgmtsi</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">svgmtsi</span> <span class="attr">class</span>=<span class="string">"address"</span>&gt;</span><span class="symbol">&amp;#xf0c8;</span><span class="tag">&lt;/<span class="name">svgmtsi</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">svgmtsi</span> <span class="attr">class</span>=<span class="string">"address"</span>&gt;</span><span class="symbol">&amp;#xe0e4;</span><span class="tag">&lt;/<span class="name">svgmtsi</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">svgmtsi</span> <span class="attr">class</span>=<span class="string">"address"</span>&gt;</span><span class="symbol">&amp;#xf392;</span><span class="tag">&lt;/<span class="name">svgmtsi</span>&gt;</span></span><br><span class="line">    优</span><br><span class="line">    <span class="tag">&lt;<span class="name">svgmtsi</span> <span class="attr">class</span>=<span class="string">"address"</span>&gt;</span><span class="symbol">&amp;#xea3a;</span><span class="tag">&lt;/<span class="name">svgmtsi</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">svgmtsi</span> <span class="attr">class</span>=<span class="string">"address"</span>&gt;</span><span class="symbol">&amp;#xeae4;</span><span class="tag">&lt;/<span class="name">svgmtsi</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">svgmtsi</span> <span class="attr">class</span>=<span class="string">"address"</span>&gt;</span><span class="symbol">&amp;#xe0e4;</span><span class="tag">&lt;/<span class="name">svgmtsi</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">svgmtsi</span> <span class="attr">class</span>=<span class="string">"address"</span>&gt;</span><span class="symbol">&amp;#xe0ce;</span><span class="tag">&lt;/<span class="name">svgmtsi</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">svgmtsi</span> <span class="attr">class</span>=<span class="string">"address"</span>&gt;</span><span class="symbol">&amp;#xe057;</span><span class="tag">&lt;/<span class="name">svgmtsi</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">svgmtsi</span> <span class="attr">class</span>=<span class="string">"address"</span>&gt;</span><span class="symbol">&amp;#xf230;</span><span class="tag">&lt;/<span class="name">svgmtsi</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">svgmtsi</span> <span class="attr">class</span>=<span class="string">"address"</span>&gt;</span><span class="symbol">&amp;#xe235;</span><span class="tag">&lt;/<span class="name">svgmtsi</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">svgmtsi</span> <span class="attr">class</span>=<span class="string">"address"</span>&gt;</span><span class="symbol">&amp;#xf616;</span><span class="tag">&lt;/<span class="name">svgmtsi</span>&gt;</span></span><br><span class="line">    100</span><br><span class="line">    <span class="tag">&lt;<span class="name">svgmtsi</span> <span class="attr">class</span>=<span class="string">"address"</span>&gt;</span><span class="symbol">&amp;#xe2cd;</span><span class="tag">&lt;/<span class="name">svgmtsi</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">svgmtsi</span> <span class="attr">class</span>=<span class="string">"address"</span>&gt;</span><span class="symbol">&amp;#xe0e4;</span><span class="tag">&lt;/<span class="name">svgmtsi</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">svgmtsi</span> <span class="attr">class</span>=<span class="string">"address"</span>&gt;</span><span class="symbol">&amp;#xf03d;</span><span class="tag">&lt;/<span class="name">svgmtsi</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">span</span>&gt;</span></span><br></pre></td></tr></table></figure></p>
+<p>唯一突破口就是css中的address，发现他的唯一属性就是有个字体。所以去css的文件中搜索这个字体，发现使用了自定义字体。<br><img data-src="https://lingmoumou-blog.oss-cn-beijing.aliyuncs.com/blog/839addd8/63cb1b3d3d5310566b2deb07035f328c.png?x-oss-process=style/blog" alt="css文件"></p>
+<blockquote>
+<p>在新的 @font-face 规则中，您必须首先定义字体的名称（比如 myFirstFont），然后指向该字体文件。</p>
+</blockquote>
+<p>然后下载字体，通过FontCreator或者FontEditor打开字体文件，我这里用了百度AI里开放API，将打开后的字体文件截图后进行文字识别，获取下面代码中的list数组。<br>将字体与编号组成字典。<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">init_font</span><span class="params">()</span>:</span></span><br><span class="line">    font2 = TTFont(<span class="string">'./font/f1c26632.woff'</span>)</span><br><span class="line">    keys = font2[<span class="string">'glyf'</span>].keys()</span><br><span class="line">    values =list(<span class="string">' .1234567890店中美家馆小车大市公酒行国品发电金心业商司超生装园场食有新限天面工服海华水房饰城乐汽香部利子老艺花专东肉菜学福饭人百餐茶务通味所山区门药银农龙停尚安广鑫一容动南具源兴鲜记时机烤文康信果阳理锅宝达地儿衣特产西批坊州牛佳化五米修爱北养卖建材三会鸡室红站德王光名丽油院堂烧江社合星货型村自科快便日民营和活童明器烟育宾精屋经居庄石顺林尔县手厅销用好客火雅盛体旅之鞋辣作粉包楼校鱼平彩上吧保永万物教吃设医正造丰健点汤网庆技斯洗料配汇木缘加麻联卫川泰色世方寓风幼羊烫来高厂兰阿贝皮全女拉成云维贸道术运都口博河瑞宏京际路祥青镇厨培力惠连马鸿钢训影甲助窗布富牌头四多妆吉苑沙恒隆春干饼氏里二管诚制售嘉长轩杂副清计黄讯太鸭号街交与叉附近层旁对巷栋环省桥湖段乡厦府铺内侧元购前幢滨处向座下県凤港开关景泉塘放昌线湾政步宁解白田町溪十八古双胜本单同九迎第台玉锦底后七斜期武岭松角纪朝峰六振珠局岗洲横边济井办汉代临弄团外塔杨铁浦字年岛陵原梅进荣友虹央桂沿事津凯莲丁秀柳集紫旗张谷的是不了很还个也这我就在以可到错没去过感次要比觉看得说常真们但最喜哈么别位能较境非为欢然他挺着价那意种想出员两推做排实分间甜度起满给热完格荐喝等其再几只现朋候样直而买于般豆量选奶打每评少算又因情找些份置适什蛋师气你姐棒试总定啊足级整带虾如态且尝主话强当更板知己无酸让入啦式笑赞片酱差像提队走嫩才刚午接重串回晚微周值费性桌拍跟块调糕'</span>)</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">for</span> k, v <span class="keyword">in</span> zip(keys, values):</span><br><span class="line">        font_dic[re.sub(<span class="string">r'uni'</span>, <span class="string">r'\\u'</span>, k).encode().decode(<span class="string">'unicode_escape'</span>)]=v</span><br></pre></td></tr></table></figure></p>
+<h2 id="获取CSS和对应的SVG"><a href="#获取CSS和对应的SVG" class="headerlink" title="获取CSS和对应的SVG"></a>获取CSS和对应的SVG</h2><p>由于css是随机的，因此每次打开的打开的页面自动获取css和对应的svg的样式。我这里虽然把目前见到的解析都写了，但是需要指定哪一种前缀用哪种解析方式，后续可以改进成为自动判定。<br>然后把css中的每个样式形成个列表，传到需要解析的方法中。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">init_dic</span><span class="params">(html)</span>:</span></span><br><span class="line">    <span class="comment"># 获取页面中使用的css样式的地址</span></span><br><span class="line">    css_url = <span class="string">"http:"</span> + re.search(<span class="string">r'(//.+svgtextcss.+\.css)'</span>, html).group()</span><br><span class="line">    css_res = current_session.get(css_url, headers=headers)</span><br><span class="line">    </span><br><span class="line">    <span class="comment"># 根据svgmtsi标签，确定svg对应的css样式的前缀和地址</span></span><br><span class="line">    css_list = re.findall(<span class="string">r'svgmtsi(.+)'</span>,<span class="string">'\n'</span>.join(css_res.text.split(<span class="string">'&#125;'</span>)))</span><br><span class="line">    <span class="keyword">for</span> c <span class="keyword">in</span> css_list:</span><br><span class="line">        svg_prefix = re.findall(<span class="string">r'class\^="(\w+)"'</span>, <span class="string">'\n'</span>.join(c.split(<span class="string">'&#125;'</span>)))[<span class="number">0</span>]</span><br><span class="line">        svg_url = <span class="string">"http:"</span> + re.findall(<span class="string">r'class\^="\w+".+(//.+svgtextcss.+\.svg)'</span>, <span class="string">'\n'</span>.join(c.split(<span class="string">'&#125;'</span>)))[<span class="number">0</span>]</span><br><span class="line"></span><br><span class="line">        dic[svg_prefix]=svg_url</span><br><span class="line">        svg_res = current_session.get(svg_url, headers=headers)</span><br><span class="line">        </span><br><span class="line">        <span class="comment"># 根据前缀合成css样式的字典列表</span></span><br><span class="line">        pattern=<span class="string">'('</span>+svg_prefix+<span class="string">r'\w+)&#123;background:(.+)px (.+)px;'</span></span><br><span class="line">        c_list = re.findall(pattern, <span class="string">'\n'</span>.join(css_res.text.split(<span class="string">'&#125;'</span>)))</span><br><span class="line"></span><br><span class="line">        <span class="comment"># 前缀解析</span></span><br><span class="line">        <span class="keyword">if</span> svg_prefix==<span class="string">'gvj'</span> :</span><br><span class="line">            svg_num_dict(c_list,svg_res.text)</span><br><span class="line">            </span><br><span class="line">        <span class="keyword">if</span> svg_prefix==<span class="string">'bwh'</span>:</span><br><span class="line">            svg_font_dict(c_list,svg_res.text)</span><br></pre></td></tr></table></figure>
+<h2 id="替换"><a href="#替换" class="headerlink" title="替换"></a>替换</h2><p>由于使用图片代替文字的css翻译的字典存成了一个，所以用一个方法进行解析。而字体的class都是一个，主要根据内容不同来解析，所以单独写了一下。可以使用全局字典存储这些字典，也可以使用redis存储这些字典。替换成redis后，会面临这些值取出来以后是byte类型的，需要转换，经过byte、str、urf-8、unicode来回折腾后，我还是决定用全局字典方便点。<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 使用图片代替文字的替换</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">replace_keyword</span><span class="params">(html)</span>:</span></span><br><span class="line">    review_kw=re.findall(<span class="string">r'&lt;svgmtsi class="(.*?)"&gt;'</span>,html)</span><br><span class="line">    <span class="keyword">for</span> kw <span class="keyword">in</span> review_kw:</span><br><span class="line">        html=html.replace(<span class="string">'&lt;svgmtsi class="'</span>+kw+<span class="string">'"&gt;&lt;/svgmtsi&gt;'</span>,other_dic[kw])</span><br><span class="line">    <span class="keyword">return</span> str(html)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 使用文字字体的替换</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">replace_keyword_font</span><span class="params">(html)</span>:</span></span><br><span class="line">    tag=re.findall(<span class="string">r'&lt;svgmtsi class="(.*?)"&gt;'</span>,html)[<span class="number">0</span>]</span><br><span class="line">    address_kw=re.findall(<span class="string">r'&lt;svgmtsi class="\w+"&gt;(.*?)&lt;'</span>,html)</span><br><span class="line">    <span class="keyword">for</span> kw <span class="keyword">in</span> address_kw:</span><br><span class="line">        html=html.replace(<span class="string">'&lt;svgmtsi class="'</span>+tag+<span class="string">'"&gt;'</span>+kw+<span class="string">'&lt;/svgmtsi&gt;'</span>,font_dic[kw])</span><br><span class="line">    <span class="keyword">return</span> str(html)</span><br></pre></td></tr></table></figure></p>
+<h1 id="解决问题"><a href="#解决问题" class="headerlink" title="解决问题"></a>解决问题</h1><h2 id="空值"><a href="#空值" class="headerlink" title="空值"></a>空值</h2><h3 id="搜索结果为空"><a href="#搜索结果为空" class="headerlink" title="搜索结果为空"></a>搜索结果为空</h3><p><img data-src="https://lingmoumou-blog.oss-cn-beijing.aliyuncs.com/blog/839addd8/b22873dbdc13c176cb999d252a7293cc.png?x-oss-process=style/blog" alt="搜索结果为空"></p>
+<p>在点评中表现为整个content-wrap中只有div[@class=not-found]一个div，所以直接判断是否这个div是否存在。</p>
+<h3 id="解析的某个内容为空"><a href="#解析的某个内容为空" class="headerlink" title="解析的某个内容为空"></a>解析的某个内容为空</h3><p><img data-src="https://lingmoumou-blog.oss-cn-beijing.aliyuncs.com/blog/839addd8/6c04ffe3f631252752e730fbdd4a19af.png?x-oss-process=style/blog" alt="商铺列表"></p>
+<p>在解析页面内容的时候会有很多判断，大部分都是判断某个标签是否存在即可。</p>
+<h2 id="获取页数"><a href="#获取页数" class="headerlink" title="获取页数"></a>获取页数</h2><p>由于进入页面后，首先获取当前搜索结果的页数，因此把搜索结果为空的判断加在获取页数的前面了。<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">parse_page_size</span><span class="params">()</span>:</span></span><br><span class="line">    content=browser.find_element_by_xpath(<span class="string">'//*[@class="content-wrap"]'</span>).get_attribute(<span class="string">'innerHTML'</span>)</span><br><span class="line">    <span class="comment"># 判断是否搜索结果为空</span></span><br><span class="line">    <span class="keyword">if</span> re.search(<span class="string">r'class="not-found"'</span>,str(content))==<span class="literal">None</span>:</span><br><span class="line">        <span class="comment"># 若仅有一页，没有页码条</span></span><br><span class="line">        <span class="keyword">if</span> re.search(<span class="string">r'class="page"'</span>,str(content))==<span class="literal">None</span>:</span><br><span class="line">            <span class="keyword">return</span> <span class="number">1</span></span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            pages=browser.find_elements_by_xpath(<span class="string">'//*[@class="page"]/a[@class="PageLink"]'</span>)</span><br><span class="line">            list=[]</span><br><span class="line">            <span class="keyword">for</span> page <span class="keyword">in</span> pages:</span><br><span class="line">                list.append(int(page.text))</span><br><span class="line">            <span class="comment"># 若有页码条，找出页码的最大值</span></span><br><span class="line">            <span class="keyword">return</span> max(list)</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0</span></span><br></pre></td></tr></table></figure></p>
+<h2 id="去重"><a href="#去重" class="headerlink" title="去重"></a>去重</h2><p>通过redis的一个set对重复数据进行过滤。如果set用这个商铺的id，则跳过解析，若没有这个商铺的id，解析保存到数据库中后，在set中新增这个id。<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> redis_con.sismember(<span class="string">'shops'</span>, sid)==<span class="literal">False</span>:</span><br><span class="line">    shop=parse_item(item)</span><br><span class="line">    insert_shop(shop)</span><br><span class="line">    redis_con.sadd(<span class="string">"shops"</span>,sid)</span><br></pre></td></tr></table></figure></p>
+<h1 id="整体流程"><a href="#整体流程" class="headerlink" title="整体流程"></a>整体流程</h1><h2 id="分类与地点"><a href="#分类与地点" class="headerlink" title="分类与地点"></a>分类与地点</h2><p><img data-src="https://lingmoumou-blog.oss-cn-beijing.aliyuncs.com/blog/839addd8/4d152e205d10d7132bd9a5c9ed8a42ec.png?x-oss-process=style/blog" alt="分类与地点"></p>
+<h3 id="分类"><a href="#分类" class="headerlink" title="分类"></a>分类</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">category_classfy</span><span class="params">()</span>:</span></span><br><span class="line">    browser.get(<span class="string">"http://www.dianping.com/zhengzhou"</span>)</span><br><span class="line">    browser.get(<span class="string">"http://www.dianping.com/zhengzhou/ch10/g112"</span>)</span><br><span class="line">    classfies=browser.find_elements_by_xpath(<span class="string">'//*[@id="classfy"]/a'</span>)</span><br><span class="line">    print(<span class="string">"len:"</span>+str(len(classfies)<span class="number">-1</span>))</span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> range(<span class="number">14</span>,len(classfies)<span class="number">-1</span>):</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> i==<span class="number">18</span>:</span><br><span class="line">            browser.find_element_by_xpath(<span class="string">'//a[@class="more J_packdown"]'</span>).click()</span><br><span class="line">            </span><br><span class="line">        classfy=browser.find_elements_by_xpath(<span class="string">'//*[@id="classfy"]/a'</span>)[i]</span><br><span class="line">        cat_id=classfy.get_attribute(<span class="string">"data-cat-id"</span>)</span><br><span class="line">        cid=<span class="string">'g'</span>+cat_id</span><br><span class="line">        name=classfy.get_attribute(<span class="string">"data-click-name"</span>).split(<span class="string">'_'</span>)[<span class="number">2</span>]</span><br><span class="line">        url=classfy.get_attribute(<span class="string">"href"</span>)</span><br><span class="line">        insert_category_classfy(cat_id,cid,name,url,<span class="literal">None</span>)</span><br><span class="line">        classfy.click()</span><br><span class="line">        flag=is_element_by_xpath_exist(<span class="string">'//*[@id="classfy-sub"]/a'</span>)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> flag==<span class="literal">True</span>:</span><br><span class="line">            classfies_sub=browser.find_elements_by_xpath(<span class="string">'//*[@id="classfy-sub"]/a'</span>)</span><br><span class="line">            <span class="comment"># if classfies_sub!=None and len(classfies_sub)&gt;0:</span></span><br><span class="line">            <span class="keyword">for</span> sub <span class="keyword">in</span> classfies_sub:</span><br><span class="line">                sub_name=sub.get_attribute(<span class="string">"data-click-name"</span>).split(<span class="string">'_'</span>)[<span class="number">3</span>]</span><br><span class="line">                <span class="keyword">if</span> <span class="string">'all'</span>!=sub_name:</span><br><span class="line">                    cat_sub_id=sub.get_attribute(<span class="string">"data-cat-id"</span>)</span><br><span class="line">                    sub_cid=<span class="string">'g'</span>+cat_sub_id</span><br><span class="line">                    sub_url=sub.get_attribute(<span class="string">"href"</span>)</span><br><span class="line">                    insert_category_classfy(cat_sub_id,sub_cid,sub_name,sub_url,cid)</span><br><span class="line">        time.sleep(<span class="number">10</span>)</span><br></pre></td></tr></table></figure>
+<h3 id="地点"><a href="#地点" class="headerlink" title="地点"></a>地点</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">category_region</span><span class="params">(n,root_url,tip,xpath_p,xpath_s)</span>:</span></span><br><span class="line">    browser.get(<span class="string">"http://www.dianping.com/zhengzhou"</span>)</span><br><span class="line">    browser.get(root_url)</span><br><span class="line">    bussi=browser.find_elements_by_xpath(xpath_p) <span class="comment">#('//*[@id="bussi-nav"]/a')</span></span><br><span class="line">    time.sleep(<span class="number">10</span>)</span><br><span class="line"></span><br><span class="line">    browser.find_elements_by_xpath(<span class="string">'//*[@id="J_nav_tabs"]/a'</span>)[n].click()</span><br><span class="line">    print(<span class="string">"len:"</span>+str(len(bussi)))</span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> range(len(bussi)):</span><br><span class="line">        browser.get(root_url)</span><br><span class="line">        browser.find_elements_by_xpath(<span class="string">'//*[@id="J_nav_tabs"]/a'</span>)[n].click()</span><br><span class="line">        bussi=browser.find_elements_by_xpath(xpath_p)[i]</span><br><span class="line">        cat_id=bussi.get_attribute(<span class="string">"data-cat-id"</span>)</span><br><span class="line">        cid=<span class="string">'r'</span>+cat_id</span><br><span class="line">        name=bussi.get_attribute(<span class="string">"data-click-title"</span>)</span><br><span class="line">        url=bussi.get_attribute(<span class="string">"href"</span>)</span><br><span class="line">        insert_category_region(cat_id,cid,name,url,<span class="literal">None</span>,tip)</span><br><span class="line">        bussi.click()</span><br><span class="line">        time.sleep(<span class="number">1</span>)</span><br><span class="line">        <span class="keyword">if</span> i==<span class="number">2</span>:</span><br><span class="line">            <span class="comment"># if i==34:</span></span><br><span class="line">            browser.find_element_by_xpath(xpath_s+<span class="string">'[@class="more J_packdown"]'</span>).click()</span><br><span class="line">        flag=is_element_by_xpath_exist(xpath_s) <span class="comment">#('//*[@id="bussi-nav-sub"]/a')</span></span><br><span class="line">        print(name+<span class="string">":"</span>+str(flag))</span><br><span class="line">        <span class="keyword">if</span> flag==<span class="literal">True</span>:</span><br><span class="line">            bussi_sub=browser.find_elements_by_xpath(xpath_s)</span><br><span class="line">            <span class="comment"># if classfies_sub!=None and len(classfies_sub)&gt;0:</span></span><br><span class="line">            <span class="keyword">for</span> sub <span class="keyword">in</span> bussi_sub:</span><br><span class="line">                cat_sub_id=sub.get_attribute(<span class="string">"data-cat-id"</span>)</span><br><span class="line">                <span class="keyword">if</span> <span class="string">'0'</span>!=cat_sub_id <span class="keyword">and</span> cat_sub_id!=<span class="literal">None</span>:</span><br><span class="line">                    sub_name=sub.text</span><br><span class="line">                    sub_cid=<span class="string">'r'</span>+cat_sub_id</span><br><span class="line">                    sub_url=sub.get_attribute(<span class="string">"href"</span>)</span><br><span class="line">                    insert_category_region(cat_sub_id,sub_cid,sub_name,sub_url,cid,tip)</span><br><span class="line">    time.sleep(<span class="number">5</span>)</span><br></pre></td></tr></table></figure>
+<h2 id="初始化"><a href="#初始化" class="headerlink" title="初始化"></a>初始化</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">init</span><span class="params">()</span>:</span></span><br><span class="line">    browser.get(<span class="string">"http://www.dianping.com/zhengzhou"</span>)</span><br><span class="line">    time.sleep(<span class="number">3</span>)</span><br><span class="line">    </span><br><span class="line">    cookie = browser.get_cookies() <span class="comment">#获取浏览器cookies</span></span><br><span class="line">    c = requests.cookies.RequestsCookieJar()</span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> cookie: <span class="comment">#添加cookie到CookieJar</span></span><br><span class="line">        c.set(i[<span class="string">"name"</span>], i[<span class="string">"value"</span>])</span><br><span class="line">    current_session.cookies.update(c) <span class="comment">#更新session里的cookie</span></span><br><span class="line"></span><br><span class="line">    res = current_session.get(<span class="string">"http://www.dianping.com/zhengzhou/ch10/g112r2038"</span>, headers=headers)</span><br><span class="line">    <span class="comment"># 初始化css字典</span></span><br><span class="line">    init_dic(res.text)</span><br><span class="line">    init_font()</span><br></pre></td></tr></table></figure>
+<h2 id="解析页面"><a href="#解析页面" class="headerlink" title="解析页面"></a>解析页面</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">parse_page</span><span class="params">(base_url)</span>:</span></span><br><span class="line">    browser.get(base_url)</span><br><span class="line">    <span class="comment"># 获取页码</span></span><br><span class="line">    pageSize=parse_page_size()</span><br><span class="line">    <span class="keyword">if</span> pageSize!=<span class="number">0</span>:</span><br><span class="line"></span><br><span class="line">        <span class="keyword">for</span> i <span class="keyword">in</span> range(pageSize):</span><br><span class="line">            print(i)</span><br><span class="line">            <span class="comment"># 翻页</span></span><br><span class="line">            <span class="keyword">if</span> i!=<span class="number">0</span>:</span><br><span class="line">                url=base_url+<span class="string">"p"</span>+str(i+<span class="number">1</span>)</span><br><span class="line">                browser.get(url)</span><br><span class="line">            items=browser.find_elements_by_xpath(<span class="string">'//*[@id="shop-all-list"]/ul/li'</span>)</span><br><span class="line">            </span><br><span class="line">            <span class="comment"># 遍历内容信息</span></span><br><span class="line">            <span class="keyword">for</span> item <span class="keyword">in</span> items:</span><br><span class="line">                tit=item.find_element_by_xpath(<span class="string">'./div[2]/div[@class="tit"]/a'</span>)</span><br><span class="line">                sid=tit.get_attribute(<span class="string">'data-shopid'</span>)</span><br><span class="line">                <span class="comment"># 重复的不再解析</span></span><br><span class="line">                <span class="keyword">if</span> redis_con.sismember(<span class="string">'shops'</span>, sid)==<span class="literal">False</span>:</span><br><span class="line">                    shop=parse_item(item)</span><br><span class="line">                    insert_shop(shop)</span><br><span class="line">                    redis_con.sadd(<span class="string">"shops"</span>,sid)</span><br></pre></td></tr></table></figure>
+<h2 id="解析信息"><a href="#解析信息" class="headerlink" title="解析信息"></a>解析信息</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">parse_item</span><span class="params">(item)</span>:</span></span><br><span class="line">    shop=&#123;&#125;</span><br><span class="line">    <span class="comment"># 商铺ID，商铺名称，商铺URL</span></span><br><span class="line">    tit=item.find_element_by_xpath(<span class="string">'./div[2]/div[@class="tit"]/a'</span>)</span><br><span class="line">    shop[<span class="string">'id'</span>]=tit.get_attribute(<span class="string">'data-shopid'</span>)</span><br><span class="line">    shop[<span class="string">'name'</span>]=tit.get_attribute(<span class="string">'title'</span>)</span><br><span class="line">    shop[<span class="string">'url'</span>]=tit.get_attribute(<span class="string">'href'</span>)</span><br><span class="line">    </span><br><span class="line">    <span class="comment">#  是否有团购、外卖信息</span></span><br><span class="line">    promoes=item.find_elements_by_xpath(<span class="string">'./div[2]/div[@class="tit"]/div[@class="promo-icon J_promo_icon"]/a'</span>)</span><br><span class="line">    <span class="keyword">for</span> promo <span class="keyword">in</span> promoes:</span><br><span class="line">        data_click_name=promo.get_attribute(<span class="string">'data-click-name'</span>)</span><br><span class="line">        <span class="keyword">if</span> data_click_name==<span class="string">'shop_group_icon_click'</span>:</span><br><span class="line">        group_title=promo.get_attribute(<span class="string">'title'</span>)</span><br><span class="line">            shop[<span class="string">'groupdeal'</span>] = re.findall(<span class="string">r'.*(\d+).*'</span>, group_title)[<span class="number">0</span>] <span class="comment"># 若有团购，记录团购信息的个数</span></span><br><span class="line">        <span class="keyword">if</span> data_click_name==<span class="string">'shop_icon_takeaway_click'</span>:</span><br><span class="line">            shop[<span class="string">'takeway'</span>]=<span class="string">'1'</span></span><br><span class="line">    </span><br><span class="line">    <span class="comment">#  评分</span></span><br><span class="line">    comment=item.find_element_by_xpath(<span class="string">'./div[2]/div[@class="comment"]'</span>)</span><br><span class="line">    stars=comment.find_element_by_xpath(<span class="string">'./span'</span>)</span><br><span class="line">    shop[<span class="string">'stars'</span>]=stars.get_attribute(<span class="string">'title'</span>)</span><br><span class="line">    star_num_class=stars.get_attribute(<span class="string">'class'</span>)</span><br><span class="line">    shop[<span class="string">'stars_num'</span>]=re.findall(<span class="string">r'.*-str(\d+).*'</span>,star_num_class)[<span class="number">0</span>]</span><br><span class="line">    </span><br><span class="line">    <span class="comment">#  评价条数</span></span><br><span class="line">    review_btn=comment.find_element_by_xpath(<span class="string">'./a[@data-click-name="shop_iwant_review_click"]'</span>)</span><br><span class="line">    <span class="keyword">if</span> re.search(<span class="string">r'&lt;(.*)&gt;'</span>,str(review_btn.get_attribute(<span class="string">'innerHTML'</span>)))!=<span class="literal">None</span>:</span><br><span class="line">        review=review_btn.find_element_by_xpath(<span class="string">'./b'</span>).get_attribute(<span class="string">'innerHTML'</span>)</span><br><span class="line">        shop[<span class="string">'reviews'</span>]=replace_keyword(review)</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        shop[<span class="string">'reviews'</span>]=<span class="literal">None</span></span><br><span class="line">        </span><br><span class="line">    <span class="comment">#  人均消费</span></span><br><span class="line">    avgprice_btn=comment.find_element_by_xpath(<span class="string">'./a[@data-click-name="shop_avgprice_click"]'</span>)</span><br><span class="line">    <span class="keyword">if</span> re.search(<span class="string">r'&lt;(.*)&gt;'</span>,str(avgprice_btn.get_attribute(<span class="string">'innerHTML'</span>)))!=<span class="literal">None</span>:</span><br><span class="line">        avgprice=avgprice_btn.find_element_by_xpath(<span class="string">'./b'</span>).get_attribute(<span class="string">'innerHTML'</span>)</span><br><span class="line">        shop[<span class="string">'avgprice'</span>]=replace_keyword(avgprice)</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        shop[<span class="string">'avgprice'</span>]=<span class="literal">None</span></span><br><span class="line">    </span><br><span class="line">    tag_addr=item.find_element_by_xpath(<span class="string">'./div[2]/div[@class="tag-addr"]'</span>)</span><br><span class="line">    </span><br><span class="line">    <span class="comment">#  所属分类</span></span><br><span class="line">    classfy_href=tag_addr.find_element_by_xpath(<span class="string">'./a[@data-click-name="shop_tag_cate_click"]'</span>).get_attribute(<span class="string">'href'</span>)</span><br><span class="line">    shop[<span class="string">'classfy'</span>]=classfy_href[int(classfy_href.rfind(<span class="string">'/'</span>))+<span class="number">1</span>:int(len(classfy_href))]</span><br><span class="line">    </span><br><span class="line">    <span class="comment">#  所属地区</span></span><br><span class="line">    region_href=tag_addr.find_element_by_xpath(<span class="string">'./a[@data-click-name="shop_tag_region_click"]'</span>).get_attribute(<span class="string">'href'</span>)</span><br><span class="line">    shop[<span class="string">'region'</span>]=region_href[int(region_href.rfind(<span class="string">'/'</span>))+<span class="number">1</span>:int(len(region_href))]</span><br><span class="line">    </span><br><span class="line">    <span class="comment">#  地址</span></span><br><span class="line">    address=tag_addr.find_element_by_xpath(<span class="string">'./span[@class="addr"]'</span>).get_attribute(<span class="string">'innerHTML'</span>)</span><br><span class="line">    shop[<span class="string">'address'</span>]=replace_keyword_font(address)</span><br><span class="line">    </span><br><span class="line">    <span class="comment">#  推荐菜</span></span><br><span class="line">    recommends=item.find_elements_by_xpath(<span class="string">'./div[2]/div[@class="recommend"]/a'</span>)</span><br><span class="line">    recommend=&#123;&#125;</span><br><span class="line">    <span class="keyword">for</span> rc <span class="keyword">in</span> recommends:</span><br><span class="line">        recommends_href=rc.get_attribute(<span class="string">'href'</span>)</span><br><span class="line">        recommends_idx=recommends_href[int(recommends_href.rfind(<span class="string">'/'</span>))+<span class="number">1</span>:int(len(recommends_href))]</span><br><span class="line">        recommend[recommends_idx]=rc.text</span><br><span class="line">    shop[<span class="string">'recommend'</span>]=str(recommend)</span><br><span class="line">    </span><br><span class="line">    <span class="comment">#  评价：口味、环境、服务</span></span><br><span class="line">    <span class="keyword">if</span> re.search(<span class="string">r'class="comment-list"'</span>,str(item.find_element_by_xpath(<span class="string">'./div[2]'</span>).get_attribute(<span class="string">'innerHTML'</span>)))!=<span class="literal">None</span>:</span><br><span class="line">        comment_lists=item.find_elements_by_xpath(<span class="string">'./div[2]/span[@class="comment-list"]/span'</span>)</span><br><span class="line">        favor=comment_lists[<span class="number">0</span>].find_element_by_xpath(<span class="string">'./b'</span>).get_attribute(<span class="string">'innerHTML'</span>)</span><br><span class="line">        shop[<span class="string">'comment_favor'</span>]=replace_keyword(favor)</span><br><span class="line">        env=comment_lists[<span class="number">1</span>].find_element_by_xpath(<span class="string">'./b'</span>).get_attribute(<span class="string">'innerHTML'</span>)</span><br><span class="line">        shop[<span class="string">'comment_env'</span>]=replace_keyword(env)</span><br><span class="line">        service=comment_lists[<span class="number">2</span>].find_element_by_xpath(<span class="string">'./b'</span>).get_attribute(<span class="string">'innerHTML'</span>)</span><br><span class="line">        shop[<span class="string">'comment_service'</span>]=replace_keyword(service)</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        shop[<span class="string">'comment_favor'</span>]=<span class="literal">None</span></span><br><span class="line">        shop[<span class="string">'comment_env'</span>]=<span class="literal">None</span></span><br><span class="line">        shop[<span class="string">'comment_service'</span>]=<span class="literal">None</span></span><br><span class="line">    </span><br><span class="line">    print(<span class="string">"--- shop "</span>+shop[<span class="string">'id'</span>]+<span class="string">"---"</span>)</span><br><span class="line">    <span class="keyword">return</span> shop</span><br></pre></td></tr></table></figure>
+<h2 id="主程序"><a href="#主程序" class="headerlink" title="主程序"></a>主程序</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">main</span><span class="params">()</span>:</span></span><br><span class="line">    <span class="comment"># 从redis中取分类组合</span></span><br><span class="line">    list=redis_con.lrange(<span class="string">"category"</span>,<span class="number">0</span>,<span class="number">999</span>)</span><br><span class="line">    base=<span class="string">"http://www.dianping.com/zhengzhou/ch10/"</span></span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> list:</span><br><span class="line">        parse_page(base+str(i,encoding=<span class="string">"utf-8"</span>))</span><br><span class="line">        redis_con.lrem(<span class="string">"category"</span>,<span class="number">1</span>,i)</span><br><span class="line">        time.sleep(<span class="number">2</span>)</span><br></pre></td></tr></table></figure>
+<h2 id="结果"><a href="#结果" class="headerlink" title="结果"></a>结果</h2><p><img data-src="https://lingmoumou-blog.oss-cn-beijing.aliyuncs.com/blog/839addd8/cf6104896cfa7bd92f44d532c41c50a4.png?x-oss-process=style/blog" alt="商铺分类"></p>
+<p><img data-src="https://lingmoumou-blog.oss-cn-beijing.aliyuncs.com/blog/839addd8/968e4c464a9f7091aea7f65a869a25d3.png?x-oss-process=style/blog" alt="商铺地点"></p>
+<p><img data-src="https://lingmoumou-blog.oss-cn-beijing.aliyuncs.com/blog/839addd8/50b3ea8de978f34bdd7512bc88de1365.png?x-oss-process=style/blog" alt="商铺结果"></p>
+<h2 id="辅助工具"><a href="#辅助工具" class="headerlink" title="辅助工具"></a>辅助工具</h2><h3 id="Xpath-Helper"><a href="#Xpath-Helper" class="headerlink" title="Xpath Helper"></a>Xpath Helper</h3><p><img data-src="https://lingmoumou-blog.oss-cn-beijing.aliyuncs.com/blog/839addd8/88ec1c1e373bbce8f4abdd47bf21c6f5.png?x-oss-process=style/blog" alt="Xpath Helper"></p>
+<h3 id="FontCreator"><a href="#FontCreator" class="headerlink" title="FontCreator"></a>FontCreator</h3><p><img data-src="https://lingmoumou-blog.oss-cn-beijing.aliyuncs.com/blog/839addd8/d4fb291a1831ca5ca0c8a04ee38dd0ed.png?x-oss-process=style/blog" alt="FontCreator"></p>
+<p>百度字体编辑器FontEditor<br><img data-src="https://lingmoumou-blog.oss-cn-beijing.aliyuncs.com/blog/839addd8/740b39d67c145ff1e4bc6346b5427d5b.png?x-oss-process=style/blog" alt="FontEditor"></p>
+<hr>
+<p>参考链接：<br>[1] <a href="https://cuiqingcai.com/4048.html" target="_blank" rel="noopener">小白进阶之Scrapy第三篇（基于Scrapy-Redis的分布式以及cookies池）</a></p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>Ling Moumou
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://lingmoumou.github.io/p/2019/05/15/839addd8/" title="爬大众点评的商铺列表">https://lingmoumou.github.io/p/2019/05/15/839addd8/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/python/" rel="tag"># python</a>
+              <a href="/tags/爬虫/" rel="tag"># 爬虫</a>
+              <a href="/tags/selenium/" rel="tag"># selenium</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/p/2019/04/09/66464f97/" rel="prev" title="Day4 学习LR&SVM理论并实践">
+      <i class="fa fa-chevron-left"></i> Day4 学习LR&SVM理论并实践
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/p/2019/06/11/2992bf74/" rel="next" title="Ambari中Heartbeat lost问题">
+      Ambari中Heartbeat lost问题 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#前期准备"><span class="nav-number">1.</span> <span class="nav-text">前期准备</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#User-Agent"><span class="nav-number">1.1.</span> <span class="nav-text">User-Agent</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#cookie"><span class="nav-number">1.2.</span> <span class="nav-text">cookie</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#延时"><span class="nav-number">1.3.</span> <span class="nav-text">延时</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#顺藤摸瓜"><span class="nav-number">2.</span> <span class="nav-text">顺藤摸瓜</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#图片代替文字"><span class="nav-number">2.1.</span> <span class="nav-text">图片代替文字</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#数字反爬"><span class="nav-number">2.1.1.</span> <span class="nav-text">数字反爬</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#文字反爬"><span class="nav-number">2.1.2.</span> <span class="nav-text">文字反爬</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#text标签"><span class="nav-number">2.1.2.1.</span> <span class="nav-text">text标签</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#textPath标签"><span class="nav-number">2.1.2.2.</span> <span class="nav-text">textPath标签</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#字体代替文字"><span class="nav-number">2.2.</span> <span class="nav-text">字体代替文字</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#字体反爬"><span class="nav-number">2.2.1.</span> <span class="nav-text">字体反爬</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#获取CSS和对应的SVG"><span class="nav-number">2.3.</span> <span class="nav-text">获取CSS和对应的SVG</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#替换"><span class="nav-number">2.4.</span> <span class="nav-text">替换</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#解决问题"><span class="nav-number">3.</span> <span class="nav-text">解决问题</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#空值"><span class="nav-number">3.1.</span> <span class="nav-text">空值</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#搜索结果为空"><span class="nav-number">3.1.1.</span> <span class="nav-text">搜索结果为空</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#解析的某个内容为空"><span class="nav-number">3.1.2.</span> <span class="nav-text">解析的某个内容为空</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#获取页数"><span class="nav-number">3.2.</span> <span class="nav-text">获取页数</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#去重"><span class="nav-number">3.3.</span> <span class="nav-text">去重</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#整体流程"><span class="nav-number">4.</span> <span class="nav-text">整体流程</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#分类与地点"><span class="nav-number">4.1.</span> <span class="nav-text">分类与地点</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#分类"><span class="nav-number">4.1.1.</span> <span class="nav-text">分类</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#地点"><span class="nav-number">4.1.2.</span> <span class="nav-text">地点</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#初始化"><span class="nav-number">4.2.</span> <span class="nav-text">初始化</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#解析页面"><span class="nav-number">4.3.</span> <span class="nav-text">解析页面</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#解析信息"><span class="nav-number">4.4.</span> <span class="nav-text">解析信息</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#主程序"><span class="nav-number">4.5.</span> <span class="nav-text">主程序</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#结果"><span class="nav-number">4.6.</span> <span class="nav-text">结果</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#辅助工具"><span class="nav-number">4.7.</span> <span class="nav-text">辅助工具</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Xpath-Helper"><span class="nav-number">4.7.1.</span> <span class="nav-text">Xpath Helper</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#FontCreator"><span class="nav-number">4.7.2.</span> <span class="nav-text">FontCreator</span></a></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Ling Moumou</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">48</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">18</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">82</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2018 – 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Ling Moumou</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script data-pjax async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/lozad@1/dist/lozad.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script>
+<script src="/js/schemes/pisces.js"></script>
+<script src="/js/next-boot.js"></script>
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  <script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+    </div>
+</body>
+</html>
