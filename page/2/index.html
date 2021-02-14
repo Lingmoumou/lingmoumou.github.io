@@ -185,104 +185,6 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://lingmoumou.github.io/p/2020/02/13/b2a59db2/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Ling Moumou">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Lingmoumou's Blog">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/p/2020/02/13/b2a59db2/" class="post-title-link" itemprop="url">Task2 文本预处理；语言模型；循环神经网络基础</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2020-02-13 01:06:58" itemprop="dateCreated datePublished" datetime="2020-02-13T01:06:58+08:00">2020-02-13</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2021-02-06 12:39:02" itemprop="dateModified" datetime="2021-02-06T12:39:02+08:00">2021-02-06</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Datawhale/" itemprop="url" rel="index"><span itemprop="name">Datawhale</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Datawhale/动手学深度学习/" itemprop="url" rel="index"><span itemprop="name">动手学深度学习</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h1 id="文本预处理"><a href="#文本预处理" class="headerlink" title="文本预处理"></a>文本预处理</h1><p>文本预处理步骤：<br>1.读取文本  2.分词  3.构建字典 建立索引<br>Vocab字典构建步骤：<br>1.统计词频，去重筛选掉低频词<br>2.根据需求添加特殊的token<br>3.建立字典，将每个token建立映射到唯一的索引<br>4.建立索引到token的映射</p>
-<p>建立词典：<br>词典的主要作用是将每一个词映射到一个唯一的索引号，主要构建了一个idx_to_token列表来存储所有的词，一个token_to_idx来存储所有词的索引。<br>在实现的的流程上是：<br>对语料进行分词，生成一个token列表，里面包含了语料的分词结果<br>对分好的词统计词频，然后根据词频来构建词典（统计好的词频完成了去重的操作，同时也保留了词的频率，方便后续的操作）<br>其中有一些名词的作用是视频里提出来的<br>pad的作用是在采用批量样本训练时，对于长度不同的样本（句子），对于短的样本采用pad进行填充，使得每个样本的长度是一致的<br>bos( begin of sentence)和eos(end of sentence)是用来表示一句话的开始和结尾<br>unk(unknow)的作用是，处理遇到从未出现在预料库的词时都统一认为是unknow ,在代码中还可以将一些频率特别低的词也归为这一类</p>
-<ol>
-<li>建立字典，设置阈值</li>
-<li>去重筛选词，特殊需求token</li>
-<li>count_corpus统计词频，得到counter</li>
-<li>增删，利用空列表<ul>
-<li>pad:二维矩阵长度不一，短句子补token利用pad</li>
-<li>bos:开始token</li>
-<li>eos：结束token</li>
-<li>unk：未登录词当作unk</li>
-</ul>
-</li>
-<li>词到索引号
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/p/2020/02/13/b2a59db2/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://lingmoumou.github.io/p/2020/02/13/966c0826/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1076,6 +978,94 @@
   
   
 
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://lingmoumou.github.io/p/2020/01/31/4d513018/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Ling Moumou">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Lingmoumou's Blog">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/p/2020/01/31/4d513018/" class="post-title-link" itemprop="url">Spring Security 基本原理</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-01-31 01:24:26" itemprop="dateCreated datePublished" datetime="2020-01-31T01:24:26+08:00">2020-01-31</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-01-31 21:53:26" itemprop="dateModified" datetime="2021-01-31T21:53:26+08:00">2021-01-31</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Java/Spring-Security/" itemprop="url" rel="index"><span itemprop="name">Spring Security</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>在web应用开发中，安全无疑是十分重要的，选择Spring Security来保护web应用是一个非常好的选择。Spring Security 是spring项目之中的一个安全模块，可以非常方便与spring项目无缝集成。</p>
+<h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><p>Spring Security 的核心主要是一系列的过滤器链。</p>
+<p>Spring Security 在 Servlet 的过滤链（filter chain）中注册了一个过滤器 FilterChainProxy，它会把请求代理到 Spring Security 自己维护的多个过滤链，每个过滤链会匹配一些 URL，如果匹配则执行对应的过滤器。过滤链是有顺序的，一个请求只会执行第一条匹配的过滤链。Spring Security 的配置本质上就是新增、删除、修改过滤器。</p>
+<p>Spring Security的过滤链<br><img data-src="https://lingmoumou-blog.oss-cn-beijing.aliyuncs.com/blog/4d513018/page_11.png" alt="Spring Security的过滤链"></p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/p/2020/01/31/4d513018/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
 
   
   <nav class="pagination">
@@ -1145,7 +1135,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">48</span>
+          <span class="site-state-item-count">47</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
